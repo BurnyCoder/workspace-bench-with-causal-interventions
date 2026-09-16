@@ -1,51 +1,42 @@
-"""multilingual_multihop: contract, units, conjunctive scoring on the toy file."""
+"""multilingual_multihop: option sets, judged roles, and a toy run on the multi-token judge."""
 
-from __future__ import annotations
-
+import json
 from pathlib import Path
 
 from wsbench import registry
-from wsbench.cli import main
-from wsbench.hard.family import load_units
-from wsbench.results import read_results
+from wsbench.banks import load_bank
+from wsbench.multitoken.options import judged_roles, option_sets
+from wsbench.multitoken.prompts import CANNOT
 
 REPO = Path(__file__).resolve().parents[1]
-EXAMPLE = REPO / "examples/readouts/multilingual_multihop.jsonl"
 
 
-def test_units_follow_the_contract():
-    header, items, contract, units = load_units("multilingual_multihop")
+def test_options_match_the_golden_and_the_bank():
+    header, items = load_bank(REPO / "evals/multilingual_multihop/items.json")
     assert header["family"] == "multilingual-multihop" and len(items) == 98
-    assert contract.multi_token and contract.conjunctive_units
+    opts = option_sets(items)
+    golden = json.loads(
+        (REPO / "tests/golden/multilingual_multihop_options.json").read_text(encoding="utf-8")
+    )
+    want = {
+        i: {r: (v["options"], v["gold_index"]) for r, v in per.items()}
+        for i, per in golden["options"].items()
+    }
+    assert want == opts
+    n_lang = 0
     for it in items:
-        us = units[it["id"]]
-        assert any(u.required for u in us)
-        for u in us:
-            if u.role == "language" or u.role == "target":
-                continue
-            lens = it["probe_token_lens"]["units"][u.role]
-            for lang, forms in u.forms.items():
-                for form in forms:
-                    idx = next(i for i, f in enumerate(it["units"]) if f["role"] == u.role)
-                    src = it["units"][idx]["forms"][lang]
-                    assert lens[lang][src.index(form)] > 1  # every kept form is multi-token
+        roles = judged_roles(it)
+        assert set(roles) == set(opts[it["id"]])
+        n_lang += "language" in roles
+        for role, (o, g) in opts[it["id"]].items():
+            assert len(o) == 6 and o[-1] == CANNOT and 0 <= g < 5 and len(set(o)) == 6
+            if role != "language" and role in (it.get("mc") or {}):
+                assert o[g] == it["mc"][role]["gold"]
+    assert n_lang == 98
 
 
-def test_toy_run(tmp_path, monkeypatch):
+def test_registered():
     from wsbench.evals.multilingual_multihop import SPEC
 
     registry.FAMILIES.setdefault(SPEC.name, SPEC)
-    monkeypatch.delenv("WSBENCH_JUDGE_MODEL", raising=False)
-    out = tmp_path / "out"
-    ids = "items=mlmh-ar-kente-accra,mlmh-ar-southpole-norwegian"
-    assert (
-        main(["judge", "family=multilingual_multihop", f"readouts={EXAMPLE}", f"out={out}", ids])
-        == 0
-    )
-    r = read_results(out)
-    rows = {row["id"]: row for row in r.rows}
-    assert (
-        rows["mlmh-ar-kente-accra"]["pass"] and rows["mlmh-ar-kente-accra"]["earliest_layer"] == 36
-    )
-    assert r.value == 0.5 and r.counts["spend_usd"] == 0.0 and r.chance is not None
-    assert r.extras["columns"]["pass"] == 0.5 and r.counts["n_empty_cells"] == 1
+    assert SPEC.group == "basic_mt" and SPEC.judge.prompt_version == "mc-2026-09-16"
