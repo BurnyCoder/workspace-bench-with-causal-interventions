@@ -299,3 +299,18 @@ def test_real_stream_signature():
 
     a = inspect.signature(AsyncMessages.stream).parameters
     assert {"thinking", "messages", "max_tokens", "model", "timeout"} <= set(a)
+
+
+def test_refusal_can_be_marked(keys, fast, monkeypatch):
+    fake = FakeAnthropicStream([text_response("", "refusal")])
+    got: dict = {}
+    monkeypatch.setattr(llm, "_make_client", lambda route, key: fake)
+    llm.stream_text(
+        ["u"],
+        model=CLAUDE,
+        on_result=lambda i, t: got.__setitem__(i, t),
+        thinking=False,
+        max_tokens=10,
+        mark_refusals=True,
+    )
+    assert got == {0: llm.REFUSED}

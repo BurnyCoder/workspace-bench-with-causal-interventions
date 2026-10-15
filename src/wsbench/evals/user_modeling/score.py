@@ -61,7 +61,15 @@ def score(
         "invalid": sum(v["choice_invalid"] for v in rows),
     }
     overall = rates(scope)
+    # plan 0012 §5 (Neel B9): the headline rule on the first sample of every cell only
+    first = {
+        it["name"]: item_flags(
+            [v for v in by_item.get(it["name"], []) if v.get("sample_idx", 0) == 0]
+        )
+        for it in scope
+    }
     extras = {
+        "pass_at_1": _rate(sum(f["inferred"] for f in first.values()), n_items),
         "correct": overall["correct"],
         "inferred": overall["inferred"],
         "distractor": overall["distractor"],

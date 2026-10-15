@@ -11,7 +11,8 @@ from wsbench.mcjudge import load_bank
 from wsbench.readouts import load_readouts
 
 ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = json.loads((ROOT / "tests/golden/moral_rationale_options.json").read_text())
+GOLDEN = json.loads((ROOT / "tests/golden/moral_rationale_options_v2.json").read_text())
+GOLDEN_V1 = json.loads((ROOT / "tests/golden/moral_rationale_options.json").read_text())
 EXAMPLE = ROOT / "examples/readouts/moral_rationale.jsonl"
 TF, YN, TB = "ec-ransom-chat_tf", "ec-ransom-chat_yn", "ec-torture_bomb-chat_tf"
 
@@ -29,14 +30,14 @@ def test_bank_loads():
 def test_options_match_source_golden():
     bank = load_bank("moral_rationale")
     pools = build_pools(bank)
-    assert len(GOLDEN) == 200
+    assert len(GOLDEN_V1) == 200
     for it in bank:
-        mcs = build_mcs(it, *pools)
+        mcs = build_mcs(it, *pools, contrast=False)
         mine = {
             s: {"shown": m.shown, "gold_pos": m.gold_pos, "short_pool": m.short_pool}
             for s, m in mcs.items()
         }
-        assert mine == GOLDEN[it["id"]], it["id"]
+        assert mine == GOLDEN_V1[it["id"]], it["id"]
         for m in mcs.values():
             assert m.shown[-1] == CANNOT and len(m.shown) == 6
     assert set(build_mcs(bank[0], *pools)) == {"committed"}
@@ -48,8 +49,8 @@ def test_rendered_prompt_matches_golden():
     bank = load_bank("moral_rationale")
     mc = build_mcs(bank[0], *build_pools(bank))["committed"]
     user = prompts.render_user("TOY READOUT", mc.question)
-    assert user == (ROOT / "tests/golden/moral_rationale_prompt.txt").read_text()
-    assert prompts.PROMPT_VERSION == "ec-v1" and prompts.SCHEMA["name"] == "ec_reason_mc"
+    assert user == (ROOT / "tests/golden/moral_rationale_prompt_v2.txt").read_text()
+    assert prompts.PROMPT_VERSION == "ec-v3" and prompts.SCHEMA["name"] == "ec_reason_mc"
 
 
 def test_tail5_cell_rule_on_example():
@@ -114,7 +115,7 @@ def test_run_verdicts_and_numbers(tmp_path, fake_llm, mk_args):
     assert f"{TF}__L036__p2:committed" not in by_key
     assert set(by_key[f"{TF}__L020__p1:committed"]) == {
         "key", "id", "layer", "pos", "reason_class", "side", "choice", "gold_pos",
-        "n_options", "short_pool", "pick", "correct", "quote",
+        "n_options", "short_pool", "contrast_pos", "pick", "correct", "quote",
     }  # fmt: skip
     assert by_key[f"{TB}__L020__p1:yes"]["side"] == "yes"
     e = res.extras
@@ -128,7 +129,7 @@ def test_run_verdicts_and_numbers(tmp_path, fake_llm, mk_args):
         (1 - (5 / 6) ** 4) ** 2, abs=1e-4
     )
     assert res.complete is False and res.pinned_instrument is True  # subset + unjudged
-    assert res.config["items"] == [TF, YN, TB] and res.config["prompt_version"] == "ec-v1"
+    assert res.config["items"] == [TF, YN, TB] and res.config["prompt_version"] == "ec-v3"
     n_judge_calls = len([u for _s, u in fake.calls if not u.startswith("Return")])
     assert n_judge_calls == 4 + 4 + 8  # TF 4 cells, YN 4 cells, TB 4 cells x 2 sides
     assert (args.out / "cells.jsonl").exists()
@@ -195,3 +196,45 @@ def test_dry_run_prints_and_makes_no_calls(tmp_path, mk_args, capsys, monkeypatc
     assert res.value is None and res.ci95 is None and res.rows == []
     assert res.config["dry_run"] is True and res.complete is False
     assert res.counts["spend_usd"] == 0.0 and res.n_items == 200
+
+
+def test_v2_contrast_options_match_the_in_repo_golden():
+    bank = load_bank("moral_rationale")
+    pools = build_pools(bank)
+    n_contrast = 0
+    for it in bank:
+        mcs = build_mcs(it, *pools)
+        mine = {
+            s: {
+                "shown": m.shown,
+                "gold_pos": m.gold_pos,
+                "short_pool": m.short_pool,
+                "contrast_pos": m.contrast_pos,
+            }
+            for s, m in mcs.items()
+        }
+        assert mine == GOLDEN[it["id"]], it["id"]
+        for m in mcs.values():
+            assert len(m.shown) == 6 and m.shown[-1] == CANNOT
+            if m.contrast_pos is not None:
+                n_contrast += 1
+                assert m.side == "committed" and m.contrast_pos != m.gold_pos
+        if it["reason_class"] == "committed":  # the gold never moves (seeded on list length)
+            assert mcs["committed"].gold_pos == GOLDEN_V1[it["id"]]["committed"]["gold_pos"]
+    assert n_contrast == 72
+
+
+def test_contrast_is_opposite_side_and_never_either():
+    from wsbench.evals.moral_rationale.judge import contrast_reason
+
+    it = {
+        "reasons": [
+            {"text": "g", "supports": "no", "frequency": 1},
+            {"text": "a", "supports": "either", "frequency": 9},
+            {"text": "b", "supports": "yes", "frequency": 2},
+            {"text": "c", "supports": "yes", "frequency": 2},
+            {"text": "d", "supports": "no", "frequency": 7},
+        ]
+    }
+    assert contrast_reason(it, "g") == "b"  # highest frequency, tie -> bank order
+    assert contrast_reason({"reasons": [{"text": "g", "supports": "either"}]}, "g") is None

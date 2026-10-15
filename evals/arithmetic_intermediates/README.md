@@ -72,7 +72,8 @@ Example: `(271 - 322) * 14` → intermediate -51, answer -714.
   averaged over that set; `net = value −
   cross`. `extras.per_variant` gives n / value / cross / net / tolerance / role per variant,
   `extras.per_role` the structural vs comparison split; `extras.committed_rate` the calls that
-  named anything. The prompt-only baseline is not item-blind here (the stock model computes the
+  named anything. The family is not in the plan-0012 `extras.layer_protocols`: it reads layers 56
+  and 60 only, both outside the 10%-85% middle band. The prompt-only baseline is not item-blind here (the stock model computes the
   expression); its frozen entry is stamped `arith-free-2026-09-16`, stale against the current
   prompt version, so `report` does not draw it until it is re-measured.
 - **Every-position read (`opts=cells=all`, the run of record since 2026-09-23).** The same

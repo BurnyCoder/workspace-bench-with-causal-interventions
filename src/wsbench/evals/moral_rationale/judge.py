@@ -41,6 +41,26 @@ class MC:
     shown: list[str]
     gold_pos: int  # 1-based
     short_pool: bool
+    contrast_pos: int | None = None  # 1-based; committed items with an opposite-side reason
+
+
+def contrast_reason(it: dict, gold: str) -> str | None:
+    """The same-topic opposite-side option of a committed item (plan 0012 §3.2): a non-gold
+    reason whose ``supports`` is yes/no and differs from the gold's (``either`` never counts);
+    highest ``frequency``, ties in bank order. None when the item has no such reason."""
+    supm = {r["text"]: r["supports"] for r in it.get("reasons", [])}
+    g = supm.get(gold)
+    if g not in ("yes", "no"):
+        return None
+    cands = [
+        r
+        for r in it.get("reasons", [])
+        if r["text"] != gold and r["supports"] in ("yes", "no") and r["supports"] != g
+    ]
+    if not cands:
+        return None
+    best = max(cands, key=lambda r: r.get("frequency", 0))  # max keeps the first of a tie
+    return str(best["text"])
 
 
 def norm(t: str) -> str:
@@ -93,9 +113,13 @@ def sample_distractors(
     return picked, len(picked) < n
 
 
-def build_mcs(it: dict, comm_pool: Pool, yes_pool: Pool, no_pool: Pool) -> dict[str, MC]:
+def build_mcs(
+    it: dict, comm_pool: Pool, yes_pool: Pool, no_pool: Pool, *, contrast: bool = True
+) -> dict[str, MC]:
     """committed -> {"committed": MC}; deliberative -> {"yes": MC, "no": MC} (a side without a
-    tagged look_for reason is omitted; such an item can never pass both sides)."""
+    tagged look_for reason is omitted; such an item can never pass both sides). With
+    ``contrast`` (ec-v2) a committed item's opposite-side reason replaces the LAST off-topic
+    distractor, so the option count stays 6; ``contrast=False`` is the ec-v1 option list."""
     q = it["question"]
     out: dict[str, MC] = {}
     if it["reason_class"] == "deliberative":
@@ -116,9 +140,19 @@ def build_mcs(it: dict, comm_pool: Pool, yes_pool: Pool, no_pool: Pool) -> dict[
     else:
         gold = it["look_for_reasons"][0]
         dists, short = sample_distractors(comm_pool, gold, it["topic_id"], f"{it['id']}:committed")
+        con = contrast_reason(it, gold) if contrast else None
+        if con is not None:
+            dists = (
+                [*dists[: N_DISTRACTORS - 1], con] if len(dists) >= N_DISTRACTORS else [*dists, con]
+            )
         shown = [*seeded_shuffle([gold, *dists], f"{EC_SEED}:{it['id']}:committed:order"), CANNOT]
         out["committed"] = MC(
-            "committed", prompts.render_committed(q, shown), shown, shown.index(gold) + 1, short
+            "committed",
+            prompts.render_committed(q, shown),
+            shown,
+            shown.index(gold) + 1,
+            short,
+            shown.index(con) + 1 if con is not None else None,
         )
     return out
 
@@ -138,7 +172,10 @@ def run(args: JudgeArgs) -> FamilyResult:
     bank = load_bank(FAMILY)
     scope = item_scope(bank, args)
     pools = build_pools(bank)
-    mcs = {it["id"]: build_mcs(it, *pools) for it in scope}
+    # opts=contrast=off: the ec-v2 question over the ec-v1 option lists (a diagnostic that
+    # separates the stance rule from the contrast option; plan 0012 §3.2)
+    contrast = args.extra.get("contrast", "on") != "off"
+    mcs = {it["id"]: build_mcs(it, *pools, contrast=contrast) for it in scope}
     cells, rep = load_readouts(args.readouts, ids=[it["id"] for it in scope], layers=args.layers)
     selected = select_cells(cells)
     nonempty = [c for c in selected if not c.empty]
@@ -181,6 +218,7 @@ def run(args: JudgeArgs) -> FamilyResult:
                             "gold_pos": mc.gold_pos,
                             "n_options": len(mc.shown),
                             "short_pool": mc.short_pool,
+                            "contrast_pos": mc.contrast_pos,
                         },
                     )
                 )
@@ -213,7 +251,9 @@ def run(args: JudgeArgs) -> FamilyResult:
             continue
         judged_cells.add(c.meta["cell"])
         choice = choice_of(r)
-        pick = classify(choice, c.meta["gold_pos"], c.meta["n_options"])
+        pick = classify(
+            choice, c.meta["gold_pos"], c.meta["n_options"], contrast_pos=c.meta["contrast_pos"]
+        )
         rows.append(
             {
                 "key": c.key,
@@ -226,6 +266,7 @@ def run(args: JudgeArgs) -> FamilyResult:
                 "gold_pos": c.meta["gold_pos"],
                 "n_options": c.meta["n_options"],
                 "short_pool": c.meta["short_pool"],
+                "contrast_pos": c.meta["contrast_pos"],
                 "pick": pick,
                 "correct": pick == "gold",
                 "quote": quote_of(r),
@@ -246,7 +287,12 @@ def run(args: JudgeArgs) -> FamilyResult:
             scope,
             rows,
             counts=counts,
-            config=base_config(args, PROMPT_VERSION),
+            # a contrast-off run is a diagnostic: stamped apart so no ec-v2 floor is drawn for it
+            config=base_config(
+                args,
+                PROMPT_VERSION if contrast else f"{PROMPT_VERSION}+contrast-off",
+                contrast=contrast,
+            ),
             n_api_failed=n_api_failed + n_summary_failed,
         ),
         scope,

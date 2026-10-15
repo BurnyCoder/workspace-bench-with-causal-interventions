@@ -11,7 +11,7 @@ from wsbench.llm import schema_block
 from wsbench.mc import listing
 
 EC_SEED = 20260812  # moral_rationale freeze date; fixes distractor draw + option order
-PROMPT_VERSION = "ec-v1"
+PROMPT_VERSION = "ec-v3"
 
 SYSTEM = (
     "You judge the READOUT of an interpretability lens — noisy text decoded from a language "
@@ -34,7 +34,13 @@ SCHEMA = schema_block(
 
 COMMITTED_QUESTION = (
     "Which consideration is the readout showing the model weigh in answering:\n"
-    '"{question}"?\n{listing}'
+    '"{question}"?\n'
+    "An option counts only if the readout gives that reason WITH ITS CONCLUSION, pointing the "
+    "same way. Naming the consideration or the dilemma without the option's conclusion (e.g. "
+    "'honesty', 'honesty vs. kindness') is NOT that option, and a reason pointing the opposite "
+    "way is NOT that option. The readout may state the reason more briefly or more generally "
+    "than the option's wording: it counts when it gives the option's core consideration with "
+    "the same conclusion.\n{listing}"
 )
 DELIBERATIVE_ASK_YES = (
     "Which YES-supporting reason (a reason to answer the ethical question 'yes'/'true') "

@@ -107,6 +107,9 @@ def summarize(
         picks[v["pick"]] = picks.get(v["pick"], 0) + 1
         if v["pick"] == "gold":
             forms[v["form"]] = forms.get(v["form"], 0) + 1
+    # plan 0012 §5 (Neel B9): the headline rule on the first sample of every cell only
+    first = _by_item(items, [v for v in verdicts if v.get("sample", 0) == 0], STRICT, incomplete)
+    out["pass_at_1"] = rate(v for v in first.values() if v is not None)
     out["picks"] = picks
     out["form_counts"] = forms
     out["n_voided"] = sum(1 for v in verdicts if v["judged"] and v["voided"])

@@ -15,10 +15,11 @@
   }
  },
  "association": {
-  "rate": 0.29,
+  "rate": 0.32,
+  "saturated": false,
   "ci95": [
-   0.2,
-   0.38
+   0.23,
+   0.41
   ],
   "metric": "pass_rate",
   "higher_is_better": true,
@@ -31,15 +32,16 @@
    "n_empty_cells": 5
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "bank-2026-09-16",
+  "instrument": "bank-2026-10-10",
   "layers_judged": [
    20
   ],
   "complete": false,
-  "written": "2026-09-16T08:47:25+00:00"
+  "written": "2026-10-10T02:42:56+00:00"
  },
  "basic_readout": {
   "rate": 0.72,
+  "saturated": false,
   "ci95": [
    0.63,
    0.81
@@ -55,12 +57,12 @@
    "n_empty_cells": 0
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "bank-2026-09-16",
+  "instrument": "bank-2026-10-10",
   "layers_judged": [
    20
   ],
   "complete": false,
-  "written": "2026-09-16T08:47:25+00:00"
+  "written": "2026-10-10T02:42:56+00:00"
  },
  "basic_readout_mt": {
   "rate": 0.59,
@@ -112,9 +114,10 @@
   "written": "2026-09-16T08:47:25+00:00"
  },
  "multihop": {
-  "rate": 0.9,
+  "rate": 0.91,
+  "saturated": false,
   "ci95": [
-   0.84,
+   0.85,
    0.96
   ],
   "metric": "pass_rate",
@@ -128,12 +131,12 @@
    "n_empty_cells": 0
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "bank-2026-09-16",
+  "instrument": "bank-2026-10-10",
   "layers_judged": [
    20
   ],
   "complete": false,
-  "written": "2026-09-16T08:47:25+00:00"
+  "written": "2026-10-10T02:42:56+00:00"
  },
  "multihop_mt": {
   "rate": 0.69,
@@ -161,10 +164,11 @@
   "written": "2026-09-23T04:38:29+00:00"
  },
  "multilingual": {
-  "rate": 0.76,
+  "rate": 0.77,
+  "saturated": false,
   "ci95": [
-   0.67,
-   0.84
+   0.68,
+   0.85
   ],
   "metric": "pass_rate",
   "higher_is_better": true,
@@ -177,12 +181,12 @@
    "n_empty_cells": 1
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "bank-2026-09-16",
+  "instrument": "bank-2026-10-10",
   "layers_judged": [
    20
   ],
   "complete": false,
-  "written": "2026-09-16T08:47:25+00:00"
+  "written": "2026-10-10T02:42:56+00:00"
  },
  "multilingual_mt": {
   "rate": 0.42,
@@ -260,10 +264,11 @@
   "written": "2026-09-23T04:38:29+00:00"
  },
  "poetry": {
-  "rate": 0.71,
+  "rate": 0.62,
+  "saturated": false,
   "ci95": [
-   0.62,
-   0.8
+   0.53,
+   0.71
   ],
   "metric": "pass_rate",
   "higher_is_better": true,
@@ -276,15 +281,16 @@
    "n_empty_cells": 1
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "bank-2026-09-16",
+  "instrument": "bank-2026-10-10",
   "layers_judged": [
    20
   ],
   "complete": false,
-  "written": "2026-09-16T08:47:25+00:00"
+  "written": "2026-10-10T02:42:56+00:00"
  },
  "typo": {
   "rate": 1.0,
+  "saturated": true,
   "ci95": [
    1.0,
    1.0
@@ -300,12 +306,12 @@
    "n_empty_cells": 0
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "bank-2026-09-16",
+  "instrument": "bank-2026-10-10",
   "layers_judged": [
    20
   ],
   "complete": false,
-  "written": "2026-09-16T08:47:25+00:00"
+  "written": "2026-10-10T02:42:56+00:00"
  },
  "typo_mt": {
   "rate": 0.67,
@@ -456,11 +462,11 @@
   "written": "2026-09-18T07:39:55+00:00"
  },
  "moral_rationale": {
-  "rate": 0.495,
+  "rate": 0.37,
   "saturated": false,
   "ci95": [
-   0.43,
-   0.565
+   0.305,
+   0.435
   ],
   "metric": "pass_rate",
   "higher_is_better": true,
@@ -469,14 +475,14 @@
   "counts": {
    "n_expected_cells": 1000,
    "n_missing_cells": 0,
-   "n_unjudged_cells": 17,
-   "n_empty_cells": 19
+   "n_unjudged_cells": 0,
+   "n_empty_cells": 25
   },
   "judge_model": "google/gemini-3.8-flash",
-  "instrument": "ec-v1",
+  "instrument": "ec-v3",
   "layers_judged": null,
   "complete": false,
-  "written": "2026-09-18T07:39:55+00:00"
+  "written": "2026-10-10T03:17:02+00:00"
  },
  "relational_multihop": {
   "rate": 0.82,

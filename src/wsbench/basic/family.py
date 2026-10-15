@@ -6,7 +6,7 @@ from typing import Any
 
 from wsbench.banks import exact_targets, item_targets, load_bank
 from wsbench.basic.judge import CellKey, JudgeOutcome, judge_cells
-from wsbench.basic.prompts import PROMPT_VERSION
+from wsbench.basic.prompts import FAMILY_RULES, PROMPT_VERSION, forbidden_line
 from wsbench.cache import Cache
 from wsbench.family import pass_rate_result, require_cells, tri_state
 from wsbench.judge_config import JudgeConfig
@@ -15,6 +15,7 @@ from wsbench.mcjudge import Preflighter, item_scope, with_readout_count
 from wsbench.readouts import Cell, load_readouts
 from wsbench.registry import REPO_ROOT, EvalSpec, JudgeArgs
 from wsbench.results import FamilyResult
+from wsbench.split import layer_protocols
 
 GROUP = "basic"
 CHANCE_LABEL = "no analytic floor (free text); the prompt-only baseline is the measured floor"
@@ -52,6 +53,8 @@ def run_family(args: JudgeArgs, *, name: str, bank: Path) -> FamilyResult:
     scope = item_scope(items, args)
     ids = [it["id"] for it in scope]
     targets = {it["id"]: targets_of(it) for it in scope}
+    family_rule = FAMILY_RULES.get(name, "")
+    forbidden = {it["id"]: forbidden_line(name, it) for it in scope}
     cells, rep = load_readouts(args.readouts, ids=ids, layers=args.layers)
     layers = args.layers if args.layers is not None else rep.layers
     groups = group_cells(cells)
@@ -64,6 +67,8 @@ def run_family(args: JudgeArgs, *, name: str, bank: Path) -> FamilyResult:
         outcome = judge_cells(
             groups,
             targets,
+            family_rule=family_rule,
+            forbidden=forbidden,
             kind=rep.kind or "prose",
             judge=args.judge,
             cache=cache,
@@ -75,6 +80,20 @@ def run_family(args: JudgeArgs, *, name: str, bank: Path) -> FamilyResult:
         )
 
     rows = [_item_row(i, layers, groups, targets[i], outcome) for i in ids]
+    extras: dict[str, Any] = {"n_calls": outcome.n_calls}
+    if not args.dry_run:  # plan 0012 §5: report-only, never the headline
+        extras["layer_protocols"] = layer_protocols(
+            {
+                r["id"]: {
+                    int(L): bool(v["expressed"])
+                    for L, v in r["layers"].items()
+                    if v.get("expressed") is not None
+                }
+                for r in rows
+            },
+            family=name,
+            layers=layers,
+        )
     result = pass_rate_result(
         name=name,
         args=args,
@@ -90,7 +109,7 @@ def run_family(args: JudgeArgs, *, name: str, bank: Path) -> FamilyResult:
         spend=spend,
         chance_label=CHANCE_LABEL,
         config_extra={"layers_judged": layers},
-        extras={"n_calls": outcome.n_calls},
+        extras=extras,
     )
     return with_readout_count(result, scope, cells)
 

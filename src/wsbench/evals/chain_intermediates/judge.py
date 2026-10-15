@@ -24,6 +24,7 @@ from wsbench.mcjudge import Call, Preflighter, item_scope, run_calls, with_reado
 from wsbench.readouts import load_readouts
 from wsbench.registry import REPO_ROOT, JudgeArgs
 from wsbench.results import FamilyResult
+from wsbench.split import layer_protocols
 
 from .prompts import MAX_VALUES, NEAR, PROMPT_VERSION, SCHEMA, SYSTEM, render_user
 
@@ -209,6 +210,22 @@ def run(args: JudgeArgs) -> FamilyResult:
                 r["null_top1_near"] for r in decided if r["null_top1_near"] is not None
             ),
             "any_of_3_rate": rate(r["any_of_3"] for r in decided),
+            # plan 0012 §5: report-only layer protocols over the per-layer (last-token) verdicts
+            "layer_protocols": layer_protocols(
+                {
+                    i: {
+                        **{k[1]: False for k in empty if k[0] == i and len(k) == 2},
+                        **{
+                            v["layer"]: bool(v["hit"])
+                            for v in judged
+                            if v["item"] == i and v["pos"] is None
+                        },
+                    }
+                    for i in ids
+                },
+                family=NAME,
+                layers=layers,
+            ),
             "committed_rate": rate(bool(v["values"]) for v in judged),
             "kinds": dict(kinds),
             "basis": dict(basis),

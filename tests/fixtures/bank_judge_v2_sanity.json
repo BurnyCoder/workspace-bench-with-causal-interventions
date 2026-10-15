@@ -1,0 +1,321 @@
+{
+ "about": "Live sanity set for bank judge v2 (plan 0012 §2.3). Held out: no case reuses an example from the SYSTEM prompt. Run with scripts/bank_judge_sanity.py; every case must give `expect` 3/3, each repetition on a fresh cache.",
+ "cases": [
+  {
+   "name": "narrower-instance",
+   "family": "association",
+   "targets": [
+    "cat"
+   ],
+   "kind": "prose",
+   "samples": [
+    "a kitten batting at a ball of yarn on the rug"
+   ],
+   "expect": true
+  },
+  {
+   "name": "depicted-act",
+   "family": "association",
+   "targets": [
+    "poison the rival"
+   ],
+   "kind": "prose",
+   "samples": [
+    "she stirred arsenic into her rival's tea and watched her drink it"
+   ],
+   "expect": true
+  },
+  {
+   "name": "combine-within-one-sample",
+   "family": "association",
+   "targets": [
+    "the meeting room is booked twice"
+   ],
+   "kind": "prose",
+   "samples": [
+    "double-booked | overlapping slots | same room"
+   ],
+   "expect": true
+  },
+  {
+   "name": "multilingual-in-language-answer",
+   "family": "multilingual",
+   "targets": [
+    "three"
+   ],
+   "kind": "prose",
+   "samples": [
+    "the answer is drei"
+   ],
+   "expect": true
+  },
+  {
+   "name": "multihop-target-beside-answer",
+   "family": "multihop",
+   "targets": [
+    "6"
+   ],
+   "surface_target": "carbon",
+   "kind": "prose",
+   "samples": [
+    "carbon (atomic number 6)"
+   ],
+   "expect": true
+  },
+  {
+   "name": "multihop-alias-credit",
+   "family": "multihop",
+   "targets": [
+    "China",
+    "Chinese"
+   ],
+   "surface_target": "Mandarin",
+   "kind": "prose",
+   "samples": [
+    "Chinese characters on the wall"
+   ],
+   "expect": true
+  },
+  {
+   "name": "topic-only",
+   "family": "association",
+   "targets": [
+    "toaster"
+   ],
+   "kind": "prose",
+   "samples": [
+    "kitchen appliances and countertop gadgets"
+   ],
+   "expect": false
+  },
+  {
+   "name": "opposite-stance",
+   "family": "association",
+   "targets": [
+    "the treaty should be ratified"
+   ],
+   "kind": "prose",
+   "samples": [
+    "the treaty must be rejected outright"
+   ],
+   "expect": false
+  },
+  {
+   "name": "derived-word",
+   "family": "association",
+   "targets": [
+    "star"
+   ],
+   "kind": "prose",
+   "samples": [
+    "a starfish in a tide pool"
+   ],
+   "expect": false
+  },
+  {
+   "name": "fragment",
+   "family": "association",
+   "targets": [
+    "elephant"
+   ],
+   "kind": "tokens",
+   "samples": [
+    "ephant",
+    " the",
+    " and"
+   ],
+   "expect": false
+  },
+  {
+   "name": "split-across-samples",
+   "family": "association",
+   "targets": [
+    "the meeting room is booked twice"
+   ],
+   "kind": "prose",
+   "samples": [
+    "overlapping slots",
+    "Room 4B"
+   ],
+   "expect": false
+  },
+  {
+   "name": "prose-enumeration",
+   "family": "basic_readout",
+   "targets": [
+    "May"
+   ],
+   "kind": "prose",
+   "samples": [
+    "January, February, March, April, May, June, July, August, September"
+   ],
+   "expect": false
+  },
+  {
+   "name": "token-sibling-ranked-above",
+   "family": "basic_readout",
+   "targets": [
+    "tennis"
+   ],
+   "kind": "tokens",
+   "samples": [
+    " football",
+    " basketball",
+    " cricket",
+    " rugby",
+    " golf",
+    " tennis",
+    " hockey",
+    " baseball",
+    " boxing",
+    " soccer"
+   ],
+   "expect": false
+  },
+  {
+   "name": "token-first-of-type",
+   "family": "basic_readout",
+   "targets": [
+    "tennis"
+   ],
+   "kind": "tokens",
+   "samples": [
+    " the",
+    " a",
+    " tennis",
+    " football",
+    " golf",
+    "\n",
+    " and",
+    " of",
+    " to",
+    " is"
+   ],
+   "expect": true
+  },
+  {
+   "name": "multihop-forbidden-answer-alone",
+   "family": "multihop",
+   "targets": [
+    "gold"
+   ],
+   "surface_target": "Au",
+   "kind": "prose",
+   "samples": [
+    "the symbol Au"
+   ],
+   "expect": false
+  },
+  {
+   "name": "multihop-forbidden-mandarin",
+   "family": "multihop",
+   "targets": [
+    "China",
+    "Chinese"
+   ],
+   "surface_target": "Mandarin",
+   "kind": "prose",
+   "samples": [
+    "Mandarin"
+   ],
+   "expect": false
+  },
+  {
+   "name": "echo-question",
+   "family": "multihop",
+   "targets": [
+    "Jupiter"
+   ],
+   "surface_target": "7",
+   "kind": "prose",
+   "samples": [
+    "the largest planet's name has how many letters"
+   ],
+   "expect": false
+  },
+  {
+   "name": "echo-calculation",
+   "family": "multilingual",
+   "targets": [
+    "five"
+   ],
+   "kind": "prose",
+   "samples": [
+    "nine minus four"
+   ],
+   "expect": false
+  },
+  {
+   "name": "evidence-not-concept",
+   "family": "association",
+   "targets": [
+    "doctor"
+   ],
+   "kind": "prose",
+   "samples": [
+    "a stethoscope and a white coat on the hook"
+   ],
+   "expect": false
+  },
+  {
+   "name": "poetry-synonym",
+   "family": "poetry",
+   "targets": [
+    "near"
+   ],
+   "kind": "prose",
+   "samples": [
+    "the danger drew close"
+   ],
+   "expect": false
+  },
+  {
+   "name": "poetry-word",
+   "family": "poetry",
+   "targets": [
+    "near"
+   ],
+   "kind": "prose",
+   "samples": [
+    "the line will end on near"
+   ],
+   "expect": true
+  },
+  {
+   "name": "typo-misspelling-echo",
+   "family": "typo",
+   "targets": [
+    "Wednesday"
+   ],
+   "kind": "prose",
+   "samples": [
+    "see you on Wensday"
+   ],
+   "expect": false
+  },
+  {
+   "name": "typo-correct-word",
+   "family": "typo",
+   "targets": [
+    "Wednesday"
+   ],
+   "kind": "prose",
+   "samples": [
+    "the word is Wednesday"
+   ],
+   "expect": true
+  },
+  {
+   "name": "poetry-derived-word",
+   "family": "poetry",
+   "targets": [
+    "bright"
+   ],
+   "kind": "prose",
+   "samples": [
+    "the brightness of the stars above"
+   ],
+   "expect": false
+  }
+ ]
+}

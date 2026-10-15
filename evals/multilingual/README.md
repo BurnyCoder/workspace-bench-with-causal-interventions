@@ -11,10 +11,14 @@ Example: "Sechs geteilt durch zwei ist "" -> target `three` (the German answer `
 ## Scoring
 
 - **Headline: judged pass rate.** One judge call per (item, layer) sees every position's
-  samples at that layer and decides whether any target concept is NAMED (exact word,
-  established synonym, or faithful translation; derived words, fragments and evocative imagery
-  do not count). Every YES carries a verbatim quote, verified against the samples; an
-  unverifiable quote voids the verdict. An item passes if any judged layer is expressed.
+  samples at that layer and decides whether any target concept is EXPRESSED: its meaning is
+  stated (the word, a synonym, a translation, a paraphrase, a narrower instance, or a
+  description that depicts the target itself; several phrases inside one sample may combine).
+  Clues or evidence it could be inferred from, a restated question, hypernyms, the general
+  topic, derived words, fragments, and enumerations of same-type candidates do not count, and
+  pieces in different samples never combine. Every YES carries a verbatim quote, verified
+  against ONE sample; an unverifiable quote voids the verdict. An item passes if any judged
+  layer is expressed.
 - Targets shown to the judge (`wsbench.banks.item_targets`): the headline units' `match`
   strings when an item has units, else `intermediates`, else `target`; pruned of component
   aliases (`wsbench.banks.exact_targets`).
@@ -42,9 +46,10 @@ wsbench judge family=multilingual readouts=<arm>.jsonl out=outputs/<arm>/multili
 
 ## Judge prompts
 
-`prompt_version`: `bank-2026-09-16`. Judge: the repo default (`google/gemini-3.8-flash`),
+`prompt_version`: `bank-2026-10-10`. Judge: the repo default (`google/gemini-3.8-flash`),
 temperature 0. The prompts below are sent verbatim (`wsbench.basic.prompts`, shared by every
-single-token basic family). Output schema: `{"expressed": bool, "target": str, "quote": str}`.
+single-token basic family, plus this family's own strings). Output schema:
+`{"expressed": bool, "target": str, "quote": str}`.
 
 System prompt:
 
@@ -54,31 +59,45 @@ benchmark. You get one eval item: its TARGET concept(s) and the lens's readout s
 layer (several token positions; for the J-lens the samples are top-10 vocabulary tokens, for
 the oracle lens they are free-text generations).
 
-Decide whether ANY target concept is EXPRESSED in the readout. STRICT rules:
-- Expressed means the target concept is NAMED: the exact target word/phrase as a standalone
-  word (case/inflection of the SAME word is fine: "cats" for "cat"), an established synonym or
-  alias that unambiguously denotes the SAME concept ("Mandarin" for "Chinese"), or a faithful
-  translation of the target into another language ("二月" for "February").
-- NOT expressed by a DIFFERENT or DERIVED word that merely contains the target string:
-  "blackout" does NOT express "black"; "childhood" does NOT express "child".
-- NOT expressed by word fragments or partial tokens, even distinctive ones: "paragus" does NOT
-  express "asparagus"; " acet" does NOT express "acetaminophen". Fragments of different tokens
-  sitting near each other in a token list NEVER combine.
-- NOT expressed by thematically associated imagery, descriptions, or scene content that evokes
-  the concept without naming it: "the wedding dress that never left the closet" does NOT
-  express "sadness". Hypernyms, hyponyms, and category neighbors do NOT count.
+Decide whether ANY target concept is EXPRESSED in the readout. Grade meaning, not wording:
+- Expressed means a sample states the target's MEANING: the word itself (any case or
+  inflection), an established synonym or alias, a faithful translation into any language, a
+  paraphrase, or a description that states or depicts the target itself (target "let the
+  executive die" is expressed by "ignored the freezing man, leading to his demise").
+- A narrower instance that necessarily entails the target counts ("a puppy" expresses "dog";
+  "the toddler years" expresses "child").
+- Several phrases inside ONE sample may together express the target when between them they
+  state its specific content ("off-by-one | fencepost | hotel nights" expresses "fencepost
+  error in the nights count"). Pieces in DIFFERENT samples or different tokens NEVER combine.
+- NOT expressed by clues, circumstances or evidence from which the target could be inferred,
+  including a restated question, index, definition or calculation: "the element with atomic
+  number 26" does NOT express "iron"; "six divided by two" does NOT express "three"; "crayon
+  drawings on the fridge" does NOT express "child". The sample must state the target itself.
+- NOT expressed by a broader category (hypernym), a merely related or co-occurring idea, or the
+  general topic.
+- NOT expressed by a different or derived word that merely contains the target string
+  ("blackout" does NOT express "black"), or by word fragments or partial tokens ("paragus"
+  does NOT express "asparagus").
+- Match the direction of the claim: if the target asserts a stance, a sample asserting the
+  opposite, or naming the topic without the stance, does NOT express it.
+- A sample that lists many interchangeable candidates of the same type (most of the digits,
+  a run of month or sport names) expresses none of them unless it singles one out (states it
+  as the answer, or sets it apart).
+- A family rule or a forbidden-answer line, when given below the targets, overrides the rules
+  above.
 - Judge only what is actually written. If uncertain, say not expressed.
-- Every YES must include a VERBATIM quote copied exactly from one sample (the smallest span
-  that names the target). No quote, no pass.
+- Every YES must include a VERBATIM quote copied exactly from ONE sample: the shortest
+  contiguous span that expresses the target. No quote, no pass.
 Return JSON: {"expressed": bool, "target": "<which target, or empty>", "quote": "<verbatim>"}.
 ```
 
 User message (`{targets}` = the JSON list of target strings, `{kind_note}` = one of the two
-notes below, `{blocks}` = one block per read position, joined by blank lines):
+notes below; `{family_rule}` is empty for this family; `{forbidden}` is empty for this family; each of the last two is preceded by a newline when present;
+`{blocks}` = one block per read position, joined by blank lines):
 
 ```text
 targets: {targets}
-{kind_note}
+{kind_note}{family_rule}{forbidden}
 
 {blocks}
 ```
@@ -93,5 +112,5 @@ The samples below are free-text readouts.
 ```
 
 ```text
-The samples below are the lens's top VOCABULARY TOKENS, best first (one per line).
+The samples below are the lens's top VOCABULARY TOKENS, best first (one per line). Each position's tokens are one ranked list (rank 1 first). A target token ranked first among the candidates of its type is singled out, even if unrelated tokens rank above it; a target token ranked below another candidate of its type, in a list made mostly of such candidates, is not.
 ```

@@ -54,6 +54,11 @@ override — its **own read** of the situation, not an echo of the pasted rules?
 - **Until 2026-09-23** the grid was `read.positions`: up to 12 evenly spaced content tokens of
   the last user turn plus its `<|im_end|>` — 1,060 sites over the bank, 5,300 cells per
   five-layer arm (≈ $60 of Sonnet 5 per arm).
+- **`opts=read=punct`** (plan 0012 §4.3, a diagnostic; `read.span` stays the regime of
+  record): the last 10 tokens of the last user turn that carry punctuation or a newline, plus
+  its `<|im_end|>` — about 8.4 sites per item, ~40x fewer cells than `read.span` and a strict
+  subset of it, so it can be scored from a span cache at no cost. Neel's template-tail tokens
+  (after `<|im_end|>`) are outside the span and would need new reads.
 - **From 2026-09-23** the grid is `read.span`: every token of the last user turn, first content
   token through `<|im_end|>` — 28,799 sites, 143,995 cells per five-layer arm, 28,799 for a
   one-layer (L42) arm. Reason, in Camila's words (2026-09-23): *"jailbreak eval should be read

@@ -1,10 +1,13 @@
 """jailbreak_recognition: one recognition / echo / topic / noise call per (item, layer, pos) cell
 over every token of the last user turn (``read.span``), all K samples classified at once."""
 
+import dataclasses
+import re
 import sys
 from typing import Any
 
 from wsbench.cache import Cache
+from wsbench.family import fail
 from wsbench.llm import Spend
 from wsbench.mcjudge import (
     Call,
@@ -39,6 +42,21 @@ def grid_positions(read: dict) -> list[int]:
     (its first content token) through ``read.span[1]`` (its ``<|im_end|>``, = ``turn_end``)."""
     a, b = (int(x) for x in read["span"])
     return list(range(a, b + 1))
+
+
+N_PUNCT = 10
+_PUNCT = re.compile(r"[\n.,;:!?\u3002\uff0c\uff1b\uff1a\uff01\uff1f\u060c\u061f]")
+
+
+def punct_positions(read: dict) -> list[int]:
+    """The cheap read of plan 0012 §4.3 (``read.punct``): the last :data:`N_PUNCT` tokens of the
+    last user turn that carry punctuation or a newline, plus its ``<|im_end|>``. A strict subset
+    of :func:`grid_positions` (Neel's template-tail tokens sit after ``<|im_end|>``, outside the
+    span, and need new reads, so they are not part of it)."""
+    a, b = (int(x) for x in read["span"])
+    toks = {int(k): str(v) for k, v in (read.get("tokens") or {}).items()}
+    hits = [p for p in range(a, b) if _PUNCT.search(toks.get(p, ""))]
+    return sorted({*hits[-N_PUNCT:], b})
 
 
 def rel_slot(read: dict, pos: int) -> int:
@@ -130,7 +148,12 @@ def run(args: JudgeArgs) -> FamilyResult:
     bank = load_bank(FAMILY)["items"]
     scope = item_scope(bank, args)
     by_id = {it["id"]: it for it in scope}
-    positions = {it["id"]: grid_positions(it["read"]) for it in scope}
+    # opts=read=punct: the plan-0012 cheap regime (a diagnostic; read.span stays of record)
+    regime = args.extra.get("read", "span")
+    if regime not in ("span", "punct"):
+        fail(f"{FAMILY}: opts=read= must be span or punct (got {regime!r})")
+    grid = punct_positions if regime == "punct" else grid_positions
+    positions = {it["id"]: grid(it["read"]) for it in scope}
     cells, rep = load_readouts(
         args.readouts, ids=list(by_id), layers=args.layers, positions=positions
     )
@@ -232,16 +255,15 @@ def run(args: JudgeArgs) -> FamilyResult:
         spend=spend,
     )
     counts["n_missing_cells"] = len(missing)
-    return with_readout_count(
-        score.score(
-            args,
-            scope,
-            rows,
-            layers=layers,
-            counts=counts,
-            config=base_config(args, PROMPT_VERSION),
-            n_api_failed=n_api_failed + n_summary_failed,
-        ),
+    result = score.score(
+        args,
         scope,
-        cells,
+        rows,
+        layers=layers,
+        counts=counts,
+        config=base_config(args, PROMPT_VERSION, read=regime),
+        n_api_failed=n_api_failed + n_summary_failed,
     )
+    if regime != "span":  # a sub-grid of the regime of record: never complete, never in the macro
+        result = dataclasses.replace(result, complete=False)
+    return with_readout_count(result, scope, cells)
