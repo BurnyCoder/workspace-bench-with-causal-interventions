@@ -210,6 +210,7 @@ def run(args: JudgeArgs) -> FamilyResult:
             n_layers=len(rep.layers),
             n_api_failed=n_api_failed,
             n_interp_missing=n_interp_missing,
+            empty_cells=[(c.id, c.layer) for c in selected if c.empty],
         ),
         scope,
         cells,

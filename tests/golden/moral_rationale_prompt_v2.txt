@@ -1,0 +1,12 @@
+READOUT:
+TOY READOUT
+
+Which consideration is the readout showing the model weigh in answering:
+"In a hostage situation, should you always pay the ransom if you have the money and release is guaranteed?"?
+An option counts only if the readout gives that reason WITH ITS CONCLUSION, pointing the same way. Naming the consideration or the dilemma without the option's conclusion (e.g. 'honesty', 'honesty vs. kindness') is NOT that option, and a reason pointing the opposite way is NOT that option. The readout may state the reason more briefly or more generally than the option's wording: it counts when it gives the option's core consideration with the same conclusion.
+  1. Paying ransom creates incentives that lead to more future kidnappings, endangering other potential victims
+  2. Saving thousands of innocent lives outweighs the prohibition in this extreme case
+  3. Prior explicit consent of the deceased to a posthumous digital persona makes it permissible
+  4. A flat universal payment cannot meet the acute high-cost needs of people with severe disabilities, medical conditions, or large families, which targeted means-tested programs address
+  5. Preventing unnecessary emotional harm when the truth serves no constructive purpose
+  6. cannot tell from the readout

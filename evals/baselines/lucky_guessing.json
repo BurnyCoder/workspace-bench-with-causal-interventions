@@ -187,9 +187,9 @@
  },
  "moral_rationale": {
   "blind": {
-   "mean": 0.195,
-   "std": 0.011726039399558573,
-   "majority": 0.19,
+   "mean": 0.263,
+   "std": 0.013509256086106286,
+   "majority": 0.26,
    "exact": null,
    "any_hit": null,
    "mean_picks": null,
@@ -203,13 +203,13 @@
    ],
    "model": "google/gemini-3.8-flash",
    "prompt_version": "lucky-2026-09-16",
-   "instrument": "ec-v1",
-   "written": "2026-09-16T07:44:21+00:00"
+   "instrument": "ec-v3",
+   "written": "2026-10-10T03:15:51+00:00"
   },
   "described": {
-   "mean": 0.262,
-   "std": 0.004472135954999583,
-   "majority": 0.27,
+   "mean": 0.378,
+   "std": 0.010954451150103331,
+   "majority": 0.375,
    "exact": null,
    "any_hit": null,
    "mean_picks": null,
@@ -223,8 +223,8 @@
    ],
    "model": "google/gemini-3.8-flash",
    "prompt_version": "lucky-2026-09-16",
-   "instrument": "ec-v1",
-   "written": "2026-09-16T07:48:38+00:00"
+   "instrument": "ec-v3",
+   "written": "2026-10-10T03:15:51+00:00"
   },
   "uniform": {
    "mean": 0.184,
@@ -243,8 +243,8 @@
    ],
    "model": "seeded-uniform",
    "prompt_version": "lucky-2026-09-16",
-   "instrument": "ec-v1",
-   "written": "2026-09-16T07:48:38+00:00"
+   "instrument": "ec-v3",
+   "written": "2026-10-10T03:15:52+00:00"
   }
  },
  "multi_concept_directed_modulation": {

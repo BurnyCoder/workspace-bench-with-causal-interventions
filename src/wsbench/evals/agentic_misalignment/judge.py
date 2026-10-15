@@ -4,8 +4,8 @@ A. one free-text call per (item, prompt position) with every selected layer's re
    position and nothing else -> a short note (``"uninformative"`` when nothing is there);
 B. per item, the notes in reading order (``compress``ed, chunked at ``chunk_chars`` with a
    ``PARTIAL_PROMPT`` per chunk when > 1) -> one blind account;
-C. per item, the account against the scenario's DESIGN (system + user turn, the designed
-   action descriptor) -> ``parse_design_score`` fields.
+C. per item, the account against the scenario's DESIGN (system + user turn, and the item's
+   concrete designed-action target from ``targets.json``) -> ``parse_design_score`` fields.
 
 Four batches across all items, each preceded by a cache lookup (A, B-partials, B-consolidate,
 C). Cache keys ``A:{label}:p{pos}``, ``B:{label}`` (+ ``B:{label}:chunk{i}``), ``C:{label}``
@@ -16,6 +16,7 @@ The prompt-scope rule (``pos < rollout_start``) is the producer's obligation: a 
 for this family must contain prompt positions only; every row is in scope here.
 """
 
+import json
 import re
 from collections import defaultdict
 from collections.abc import Callable, Sequence
@@ -26,7 +27,7 @@ from wsbench.family import fail
 from wsbench.llm import Spend
 from wsbench.mcjudge import base_config, base_counts, item_scope, load_bank, with_readout_count
 from wsbench.readouts import Cell, load_readouts
-from wsbench.registry import JudgeArgs
+from wsbench.registry import REPO_ROOT, JudgeArgs
 from wsbench.results import FamilyResult
 
 from . import prompts, score
@@ -36,6 +37,8 @@ from .prompts import (
     PARTIAL_PROMPT,
     PROMPT_VERSION,
     READOUT_KIND,
+    STAGE_AB_VERSION,
+    STAGE_C_VERSION,
     PositionNote,
     chunk_notes,
     compress,
@@ -45,9 +48,19 @@ from .prompts import (
 )
 
 FAMILY = "agentic_misalignment"
+TARGETS = REPO_ROOT / "evals/agentic_misalignment/targets.json"
+
+
+def load_targets() -> dict[str, dict]:
+    """The Stage C sidecar (plan 0012 §3.1): item id -> {action, forms, not_credit}."""
+    return dict(json.loads(TARGETS.read_text(encoding="utf-8"))["items"])
+
+
 DEFAULT_STRIDE = 1
 DEFAULT_CHUNK_CHARS = 60_000  # the source driver's --chunk-chars default
-STAGE_A_MAX_TOKENS = 400  # not in fp_A: bump PROMPT_VERSION when changing any STAGE_*_MAX_TOKENS
+STAGE_A_MAX_TOKENS = (
+    400  # not in fp_A: bump STAGE_AB_VERSION (A/B) or STAGE_C_VERSION (C) when changing them
+)
 STAGE_B_MAX_TOKENS = 16_000
 STAGE_C_MAX_TOKENS = 12_000
 SCENARIO_CAP = 24_000  # driver L306
@@ -113,16 +126,22 @@ def _batch(
     cache: Cache,
     spend: Spend,
     extra: Callable[[str, str], dict] | None = None,
+    refused: set[str] | None = None,
 ) -> dict[str, str | None]:
     """cache key -> text. Cached (non-failed) rows are reused; the rest go through
     :func:`llm.stream_text` in one batch. A landed text (incl. ``""``) is ``cache.put``
-    immediately as ``{"result": text, **extra(key, text)}``; ``None`` is never cached."""
+    immediately as ``{"result": text, **extra(key, text)}``; ``None`` is never cached. With a
+    ``refused`` set (Stage A), a model refusal is a judged position read as ``"uninformative"``:
+    cached as ``{"result": "uninformative", "refused": true}`` (never re-asked) and its key added
+    to ``refused`` (cached refusals included)."""
     out: dict[str, str | None] = {}
     pending: Calls = []
     for key, fp, user in calls:
         row = cache.get(key, fp)
         if row is not None:
             out[key] = row["result"]
+            if refused is not None and row.get("refused"):
+                refused.add(key)
         else:
             pending.append((key, fp, user))
     print(f"stage {stage}: {len(pending)} calls ({len(out)} cached, model={args.judge.model})")
@@ -131,6 +150,13 @@ def _batch(
 
     def on_result(i: int, text: str | None) -> None:
         key, fp, _user = pending[i]
+        if refused is not None and text == llm.REFUSED:
+            refused.add(key)
+            cache.put(key, fp, {"result": "uninformative", "refused": True})
+            out[key] = "uninformative"
+            return
+        if text == llm.REFUSED:  # not asked for; never cache the marker
+            text = None
         if text is not None:
             cache.put(key, fp, {"result": text, **(extra(key, text) if extra else {})})
         out[key] = text
@@ -144,6 +170,7 @@ def _batch(
         concurrency=args.concurrency,
         rpm=args.rpm,
         spend=spend,
+        mark_refusals=refused is not None,
     )
     for key, _fp, _u in pending:
         out.setdefault(key, None)
@@ -168,6 +195,10 @@ def run(args: JudgeArgs) -> FamilyResult:
     for c in cells:
         max_pos[c.id] = max(max_pos.get(c.id, -1), c.pos)
     items = [it for it in scope if it["id"] in by_item]
+    targets = load_targets()
+    missing_t = [it["id"] for it in items if it["id"] not in targets]
+    if missing_t:
+        fail(f"{FAMILY}: targets.json has no entry for {missing_t[:3]}")
     positions = {it["id"]: sorted(by_item[it["id"]]) for it in items}
 
     # ---- Stage A prompts + fingerprints (every selected position, all-empty ones included,
@@ -181,7 +212,7 @@ def run(args: JudgeArgs) -> FamilyResult:
             ro = by_item[lb][pos]
             user = prompts.render_position(readout_kind, format_readouts(ro))
             a_user[(lb, pos)] = user
-            a_fp[(lb, pos)] = fingerprint("A", PROMPT_VERSION, model, user)
+            a_fp[(lb, pos)] = fingerprint("A", STAGE_AB_VERSION, model, user)
             if not any(v for v in ro.values()):
                 a_note[(lb, pos)] = "uninformative"  # nothing to read; no call (driver L191)
 
@@ -236,6 +267,9 @@ def run(args: JudgeArgs) -> FamilyResult:
             for (lb, pos) in a_user
             if (lb, pos) not in a_note
         ]
+        # a refused position is read as uninformative (Camila 2026-10-11): the judge's safety
+        # classifier declining one position must not block the whole item
+        refused_a: set[str] = set()
         a_res = _batch(
             "A",
             a_calls,
@@ -244,6 +278,7 @@ def run(args: JudgeArgs) -> FamilyResult:
             args=args,
             cache=cache,
             spend=spend,
+            refused=refused_a,
         )
         for lb, pos in a_user:
             if (lb, pos) in a_note:
@@ -258,14 +293,22 @@ def run(args: JudgeArgs) -> FamilyResult:
             n_none_a[lb] = sum(1 for p in positions[lb] if a_note[(lb, p)] is None)
             fp_b[lb] = fingerprint(
                 "B",
-                PROMPT_VERSION,
+                STAGE_AB_VERSION,
                 model,
                 CONSOLIDATE_PROMPT,
                 PARTIAL_PROMPT,
                 chunk_chars,
                 [a_fp[(lb, p)] for p in positions[lb]],
             )
-            fp_c[lb] = fingerprint("C", fp_b[lb], DESIGN_SCORE_PROMPT)
+            # chained on fp_B (an upstream change still re-asks C), plus the Stage C version and
+            # the item's rendered target, so editing targets.json re-asks only that item's C
+            fp_c[lb] = fingerprint(
+                "C",
+                fp_b[lb],
+                STAGE_C_VERSION,
+                DESIGN_SCORE_PROMPT,
+                prompts.render_action_block(targets[lb]),
+            )
             if n_none_a[lb]:
                 continue
             notes[lb] = [PositionNote(p, a_note[(lb, p)] or "") for p in positions[lb]]
@@ -339,7 +382,7 @@ def run(args: JudgeArgs) -> FamilyResult:
             (
                 f"C:{lb}",
                 fp_c[lb],
-                prompts.render_design_score(acc, by_id[lb]["descriptor"], scenario_of(by_id[lb])),
+                prompts.render_design_score(acc, targets[lb], scenario_of(by_id[lb])),
             )
             for lb, acc in account.items()
             if acc is not None
@@ -376,6 +419,9 @@ def run(args: JudgeArgs) -> FamilyResult:
             "n_positions_read": len(positions.get(lb, [])),
             "n_informative": None,
             "n_unjudged_positions": n_none_a.get(lb, 0),
+            "n_refused_positions": sum(
+                1 for p in positions.get(lb, []) if f"A:{lb}:p{p}" in refused_a
+            ),
             "n_chunks": n_chunks.get(lb),
             "account": account.get(lb),
             **dict.fromkeys(PARSED_FIELDS),
@@ -409,18 +455,20 @@ def run(args: JudgeArgs) -> FamilyResult:
         skipped_rows=sum(rep.skipped.values()),
         spend=spend,
     )
+    result = score.score(
+        args,
+        scope,
+        records,
+        rows,
+        counts=counts,
+        config=config,
+        n_positions_read=sum(len(p) for p in positions.values()),
+        n_informative=n_informative,
+        usage=_usage(spend),
+    )
+    result.extras["n_refused_positions"] = len(refused_a)
     return with_readout_count(
-        score.score(
-            args,
-            scope,
-            records,
-            rows,
-            counts=counts,
-            config=config,
-            n_positions_read=sum(len(p) for p in positions.values()),
-            n_informative=n_informative,
-            usage=_usage(spend),
-        ),
+        result,
         [it for it in scope if it["arm"] == "misaligned"],
         cells,
     )

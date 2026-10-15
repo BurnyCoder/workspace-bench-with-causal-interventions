@@ -90,6 +90,8 @@ def judge_cells(
     groups: dict[CellKey, list[Cell]],
     targets: dict[str, list[str]],
     *,
+    family_rule: str,
+    forbidden: dict[str, str],
     kind: Kind,
     judge: ResolvedJudge,
     cache: Cache,
@@ -114,7 +116,14 @@ def judge_cells(
             continue
         k = cell_key(key)
         samples_of[k] = samples
-        calls.append(Call(key=k, system=SYSTEM, user=render_user(targets[key[0]], kind, cells)))
+        user = render_user(
+            targets[key[0]],
+            kind,
+            cells,
+            family_rule=family_rule,
+            forbidden=forbidden.get(key[0], ""),
+        )
+        calls.append(Call(key=k, system=SYSTEM, user=user))
     results = run_calls(
         calls,
         schema=SCHEMA,

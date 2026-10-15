@@ -104,6 +104,35 @@ prompt-only summaries (`gen-prompt-only-hard-mt`, layer 20, `judge_model` `regex
 recoverable, so these are high, not item-blind floors, and several lens arms sit below them
 (`multihop_mt`: s3d-rl600 0.32 against 0.69); read them as the text-leakage caveat above says.
 
+The six single-token bank entries were re-judged on 2026-10-09 under bank judge v2 (instrument
+`bank-2026-10-09`, plan 0012 §2) from the SAME summaries (`gen-prompt-only`, layer 20):
+association 0.29 -> 0.33, basic_readout 0.72 -> 0.71, multihop 0.90 -> 0.91, multilingual 0.76 ->
+0.77, poetry 0.71 -> 0.59, typo 1.00 -> 1.00. Poetry's drop is consistent with v2's word-only
+family rule (v1 also credited established synonyms), but the flipped items were not audited.
+Re-judged again on 2026-10-10 under `bank-2026-10-10` (the poetry rule also refuses derived
+words): association 0.32, basic_readout 0.72, multihop 0.91, multilingual 0.77, poetry 0.62,
+typo 1.00. Only poetry's prompt text changed; the 0.01 moves elsewhere are the judge's
+run-to-run spread at temperature 0, which is what two identical prompts re-asked cost.
+
+**Re-measured under Claude Opus 5.5 (2026-10-11, the new default judge).** Prompt-only, same
+summaries: association 0.32, basic_readout 0.59, multihop 0.91, multilingual 0.74, poetry 0.42,
+typo 1.00, moral_rationale 0.405, directed_modulation 0.19, buggy_code 3.71, conjunctive 0.24,
+relational_multihop 0.94, user_modeling 0.05. Lucky guessing: every option-list family re-run.
+NOT re-measured (no prompt-only summaries on disk at the current read sites): arithmetic,
+brew, chain and role_bound. `floors()` now also requires the entry's `judge_model` to be the
+family's judge, so those four Gemini-era floors are no longer drawn beside Opus 5.5 numbers.
+The multi-token entries are regex-scored and unaffected.
+
+The `moral_rationale` floors were re-measured on 2026-10-10 under `ec-v3` (plan 0012 §3.2: stance
+rule, briefer wording allowed, + same-topic contrast option). Prompt-only 0.495 -> 0.37 (0.33
+under the stricter `ec-v2`): the stance rule refuses the
+topic-only reasons a no-activation summary names. Lucky guessing RISES, blind 0.195 -> 0.263 and
+described 0.262 -> 0.378 (uniform 0.184): on the 72 committed items with a contrast, two options
+now share the question's topic, so a guesser shown only the options can narrow to those two.
+Read ec-v2 arms against these floors, and the contrast pick rate against the same caveat. (The
+prompt-only run here counted 25 empty cells where the 2026-09-18 freeze counted 19; same summaries,
+re-converted with `convert-gen-dir`.)
+
 The `poetry` and `user_modeling` entries were measured at the read sites those families used
 until 2026-09-23 (the final prompt token / the assistant-onset token); both families now read
 wider spans, and their prompt-only floors are being re-measured on the same spans.

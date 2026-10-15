@@ -38,6 +38,13 @@ SATURATED: dict[str, str] = {
 }
 
 
+def judge_models() -> dict[str, str]:
+    from wsbench import registry
+
+    registry.load_all()
+    return {name: spec.judge.model for name, spec in registry.FAMILIES.items()}
+
+
 def instrument_versions() -> dict[str, str]:
     from wsbench import registry
 
@@ -104,10 +111,12 @@ def freeze(run_dir: Path, dst: Path = FROZEN, *, source: Path | None = None) -> 
 
 def floors(dst: Path = FROZEN) -> dict[str, dict[str, Any]]:
     """Frozen prompt-only entries whose ``instrument`` matches the family's current judge
-    prompt version; stale entries are dropped."""
+    prompt version AND whose ``judge_model`` is the family's judge (a regex entry or one with
+    no stamp passes); stale entries are dropped, so a judge change needs a re-measured floor."""
     if not dst.exists():
         return {}
     versions = instrument_versions()
+    models = judge_models()
     frozen = json.loads(dst.read_text(encoding="utf-8"))
     return {
         fam: e
@@ -116,4 +125,5 @@ def floors(dst: Path = FROZEN) -> dict[str, dict[str, Any]]:
         and fam not in EXCLUDED
         and versions.get(fam) is not None
         and e.get("instrument") == versions.get(fam)
+        and e.get("judge_model") in (None, "regex", models.get(fam))
     }
