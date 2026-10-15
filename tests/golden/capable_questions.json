@@ -92,6 +92,15 @@
    "Nygaard"
   ]
  },
+ "multihop_mt_v2": {
+  "n": 146,
+  "first_id": "mh2-coeur-de-lion-brother-charter-q2",
+  "first_ask": "Continue this text. Reply with the continuation only — the next word or short phrase, nothing else, no punctuation of your own.\n\nFact: the crusader monarch nicknamed 'Cœur de Lion', who first licensed jousting tournaments on English soil was succeeded on the throne by his younger brother, a monarch whose reign is best remembered for the",
+  "first_golds": [
+   "Magna Carta",
+   "Magna Carta Libertatum"
+  ]
+ },
  "multilingual": {
   "n": 100,
   "first_id": "de-half-six",

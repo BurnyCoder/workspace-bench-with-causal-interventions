@@ -13,6 +13,19 @@ Scored units: `bridge1` (required) and `bridge2` (required, the 32 three-hop ite
 
 The bank file is a frozen copy of the source repo's hard-tier bank; its `contract` block, per-unit `forms` and `probe_token_lens` counts are exactly what the scorer reads.
 
+## Audit (2026-10-15)
+
+On Qwen3.6-27B, with this bank's own gate recipe, **93 of these 100 items are reachable while
+skipping a claimed bridge**, including all 32 three-hop items. The probe either removes the
+clue that pins the bridge or keeps only the final clause, and still reaches the answer at
+≥5/10. Examples: "the ninth planet found in 1930 by" → Tombaugh 10/10; "the famous American
+racehorse spent his breeding career at" → Claiborne Farm 10/10. The per-item table is
+[`AUDIT_2026-10-15.md`](AUDIT_2026-10-15.md).
+
+The bank is frozen and unchanged. Its shortcut-gated successor is
+[`multihop_mt_v2`](../multihop_mt_v2/README.md) (plan 0013). Once v2 has readouts, v1 leaves
+the macro.
+
 ## Scoring
 
 - **Headline: regex pass rate** — `scorer_version` `mt-regex-2026-09-23` on prose readouts:

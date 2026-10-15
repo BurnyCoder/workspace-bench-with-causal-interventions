@@ -69,6 +69,10 @@ DESCRIPTIONS: dict[str, str] = {
         "which multi-token concept a two- or three-hop factual prompt passes through on the way "
         "to its answer"
     ),
+    "multihop_mt_v2": (
+        "which multi-token entities a two- or three-hop factual prompt passes through on the way "
+        "to its answer"
+    ),
     "multilingual_mt": (
         "which concept a short non-English sentence is about, and which language it is written in"
     ),
@@ -255,6 +259,7 @@ BUILDERS: dict[str, Callable[[], list[Item]]] = {
     "user_modeling": _user_modeling,
     "directed_modulation": _directed_modulation,
     "multihop_mt": _multitoken("multihop_mt"),
+    "multihop_mt_v2": _multitoken("multihop_mt_v2"),
     "multilingual_mt": _multitoken("multilingual_mt"),
     "typo_mt": _multitoken("typo_mt"),
     "basic_readout_mt": _multitoken("basic_readout_mt"),

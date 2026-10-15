@@ -259,6 +259,7 @@ BUILDERS: dict[str, Callable[[], list[Question]]] = {
     "typo": _asked("typo", CORRECT_SPELLING),
     "basic_readout_mt": _asked("basic_readout_mt", CONTINUE),
     "multihop_mt": _with_bridges("multihop_mt"),
+    "multihop_mt_v2": _with_bridges("multihop_mt_v2"),
     "multilingual_mt": _asked("multilingual_mt", CONTINUE),
     "multilingual_multihop": _with_bridges("multilingual_multihop"),
     "multilingual_typo": _asked("multilingual_typo", CORRECT_SPELLING),
