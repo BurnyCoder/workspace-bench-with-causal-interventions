@@ -20,6 +20,7 @@ from wsbench.results import read_results
 REPO = Path(__file__).resolve().parents[1]
 MT = [
     "multihop_mt",
+    "multihop_mt_v2",
     "multilingual_mt",
     "typo_mt",
     "basic_readout_mt",

@@ -5,7 +5,7 @@ writes. A lens reads the model's residual stream at a token position and produce
 (an "O-lens": sampled sentences) or a top-10 token bag (a "J-lens": tokens with scores). Each eval
 pairs a frozen item bank with a judge that checks whether the readout carries the latent the item
 was built around, without echoing the prompt. Judging is Gemini 3.8 Flash via OpenRouter,
-except two families pinned to Claude and six scored by regex (see [Judges](#judges)). Judging
+except two families pinned to Claude and seven scored by regex (see [Judges](#judges)). Judging
 is the contract: a lens producer hands over one JSONL readout file per (family, arm) and
 `wsbench` scores it. The optional `wsbench produce` (the `gpu` extra) can generate those
 readouts for you.
@@ -135,6 +135,11 @@ commands with `PYTHONPATH=src`, because the editable install points at the main 
 - *What it is:* A two- or three-hop factual prompt whose bridge concepts are multi-token names; every bridge must be written by the lens in one layer ("...the 1967 Norwegian Computing Center creation that introduced classes and objects was designed by Ole-Johan Dahl together with" -> bridge *Simula 67*, answer Kristen Nygaard).
 - *Example:* "Fact: the 1967 Norwegian Computing Center creation that introduced the concepts of class and object was designed by Ole-Johan Dahl together with" → bridge `Simula 67` (or `the Simula language`) in one sample.
 - *Judged by:* the regex contract: every required unit's multi-token form (any listed language, exact after folding, word-boundary) found in one sample at one layer; item passes at any layer. Prose readouts need no call; token bags are summarized first (`docs/summarizer.md`) and matched on the summary or the bag. Instrument since 2026-09-23; the 2026-09-16 forced-choice judge is `opts=judge=mc`.
+
+**Multihop v2 (multi-token)** — [`evals/multihop_mt_v2/README.md`](evals/multihop_mt_v2/README.md)
+- *What it is:* The shortcut-gated successor of `multihop_mt`: a two- or three-hop factual prompt whose multi-token bridges are each proved necessary on Qwen3.6-27B (bridge-ablated, final-clause-only and adversary probes all fail to reach the answer); every bridge must be written by the lens in one layer.
+- *Example:* "Fact: the crusader monarch nicknamed 'Cœur de Lion', who first licensed jousting tournaments on English soil was succeeded on the throne by his younger brother, a monarch whose reign is best remembered for the" → bridges `Richard I of England` and `John of England`, in one sample.
+- *Judged by:* the same regex contract as `multihop_mt` (every required unit's multi-token form found in one sample at one layer; item passes at any layer); token bags are summarized first. The forced-choice judge is `opts=judge=mc`.
 
 **Multilingual (multi-token)** — [`evals/multilingual_mt/README.md`](evals/multilingual_mt/README.md)
 - *What it is:* A non-English prompt whose answer is a multi-token concept; the lens must write the concept (its English or Chinese form) and show the passage's language, both in one layer.
@@ -279,7 +284,7 @@ Every family runs on `google/gemini-3.8-flash` except two pins: **agentic_misali
 `claude-sonnet-5` (its judge of record, no Gemini agreement data) and **jailbreak_recognition**
 on `claude-sonnet-5` (Gemini refuses to judge a share of jailbreak cells). The prompt version is
 the instrument: bump it on any prompt edit, and a frozen baseline only applies to a matching
-version. The six multi-token families (`*_mt`, `multilingual_multihop`, `multilingual_typo`)
+version. The seven multi-token families (`*_mt`, `multihop_mt_v2`, `multilingual_multihop`, `multilingual_typo`)
 are scored by the **regex** contract since 2026-09-23 (Camila: "regex on the multitoken please") —
 no call on prose readouts; token bags are first interpreted by the shared summarizer (`interp-v1`,
 `google/gemini-3.8-flash`, cached), which is the instrument for those arms
@@ -305,6 +310,7 @@ never pinned.
 | multi_concept_directed_modulation | google/gemini-3.8-flash | mcdm-2026-09-16 |
 | multihop | google/gemini-3.8-flash | bank-2026-10-10 |
 | multihop_mt | regex; token bags via the summarizer (google/gemini-3.8-flash) | mt-regex-2026-09-23 (token bags: mt-regex-summarized-2026-09-23) |
+| multihop_mt_v2 | regex; token bags via the summarizer (google/gemini-3.8-flash) | mt-regex-2026-09-23 (token bags: mt-regex-summarized-2026-09-23) |
 | multilingual | google/gemini-3.8-flash | bank-2026-10-10 |
 | multilingual_mt | regex; token bags via the summarizer (google/gemini-3.8-flash) | mt-regex-2026-09-23 (token bags: mt-regex-summarized-2026-09-23) |
 | multilingual_multihop | regex; token bags via the summarizer (google/gemini-3.8-flash) | mt-regex-2026-09-23 (token bags: mt-regex-summarized-2026-09-23) |

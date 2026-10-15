@@ -119,11 +119,12 @@ def test_golds_name_the_bank_answers():
         b = brew[it.id]
         assert it.lists[0][it.golds[0] - 1] == b["intermediates"][0]
         assert {b["start"], b["answer"]} <= set(it.lists[0])
-    _h, mt_bank = lg.load_bank_file(REPO / "evals/multihop_mt/items.json")
-    mt = {it["id"]: it for it in mt_bank}
-    for it in lg.build_family("multihop_mt"):
-        for role, lst, g in zip(it.meta["roles"], it.lists, it.golds, strict=True):
-            assert lst[g - 1] == mt[it.id]["mc"][role]["gold"]
+    for fam in ("multihop_mt", "multihop_mt_v2"):
+        _h, mt_bank = lg.load_bank_file(REPO / f"evals/{fam}/items.json")
+        mt = {it["id"]: it for it in mt_bank}
+        for it in lg.build_family(fam):
+            for role, lst, g in zip(it.meta["roles"], it.lists, it.golds, strict=True):
+                assert lst[g - 1] == mt[it.id]["mc"][role]["gold"]
 
 
 def test_analytic_floors():
