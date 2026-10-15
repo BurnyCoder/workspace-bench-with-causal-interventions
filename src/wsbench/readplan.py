@@ -222,6 +222,8 @@ def plan(family: str) -> list[ReadSpec]:
         "multilingual_multihop",
         "multilingual_typo",
         "typo_mt",
+        "wrong_bridge",
+        "wrong_bridge_true",
     ):
         return _final_token_families(family, "plain")
     if family == "poetry":

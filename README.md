@@ -109,6 +109,16 @@ commands with `PYTHONPATH=src`, because the editable install points at the main 
 - *Example:* "Fact: The chemical symbol for the element with atomic number 26 is" → surface answer `Fe`; target (bridge) `iron`.
 - *Judged by:* the shared bank judge, one call per (item, layer): pass = the bridge's meaning is EXPRESSED in one sample (not clues it could be inferred from, and not the surface answer alone) with a verbatim quote verified against that sample; item passes at any layer.
 
+**Wrong-bridge multihop** — [`evals/wrong_bridge/README.md`](evals/wrong_bridge/README.md)
+- *What it is:* A Wikidata two-hop prompt where Qwen3.6-27B resolves the WRONG intermediate and so answers wrong ("Fact: The composer of Canon and Gigue in D died in the year" -> `1750` via *Bach*, not Pachelbel's 1706); does the lens name the model's wrong bridge at the last word of the prompt.
+- *Example:* "Fact: The painter of Small Cowper Madonna died in the year" → model answer `1519`; target (the model's wrong bridge) `Leonardo da Vinci` (true bridge Raphael).
+- *Judged by:* the shared bank judge, one call per (item, layer): pass = a target concept is NAMED with a verbatim quote verified against one sample; item passes at any layer.
+
+**Wrong-bridge multihop (true-bridge contrast)** — [`evals/wrong_bridge_true/README.md`](evals/wrong_bridge_true/README.md)
+- *What it is:* The same 100 prompts and read sites as `wrong_bridge`, scored against the TRUE bridge the model failed to use; read beside `wrong_bridge` (a lens that tracks the model's computation should name B' more often than B).
+- *Example:* "Fact: The painter of Small Cowper Madonna died in the year" → target (the true bridge) `Raphael`.
+- *Judged by:* the shared bank judge, one call per (item, layer): pass = a target concept is NAMED with a verbatim quote verified against one sample; item passes at any layer.
+
 **Multilingual** — [`evals/multilingual/README.md`](evals/multilingual/README.md)
 - *What it is:* A non-English prompt with a one-word answer ("Sechs geteilt durch zwei ist" -> `drei`); does the lens name the concept, in any language, at the final prompt token.
 - *Example:* "Sechs geteilt durch zwei ist" → answer `drei`; target concept `three` (a readout saying *drei*, *three* or *三* all count).
@@ -320,6 +330,8 @@ never pinned.
 | role_bound_association | google/gemini-3.8-flash | oa-v1 |
 | typo | google/gemini-3.8-flash | bank-2026-10-10 |
 | typo_mt | regex; token bags via the summarizer (google/gemini-3.8-flash) | mt-regex-2026-09-23 (token bags: mt-regex-summarized-2026-09-23) |
+| wrong_bridge | google/gemini-3.8-flash | bank-2026-10-10 |
+| wrong_bridge_true | google/gemini-3.8-flash | bank-2026-10-10 |
 | user_modeling | google/gemini-3.8-flash | um-v2 |
 
 - Override precedence: `judge_model=` flag > `WSBENCH_JUDGE_MODEL` env > the family pin.
