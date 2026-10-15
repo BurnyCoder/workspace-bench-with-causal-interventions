@@ -284,6 +284,9 @@ NO_QUESTION: dict[str, str] = {
     "jailbreak_recognition": "no gate: the bank is verbatim WildChat conversations",
     "agentic_misalignment": "the gate is the rollout itself (the model did or did not misbehave)",
     "jlens_concept_pr": "no bank questions: the items are captured activations",
+    "wrong_bridge": "the gate is a specific Qwen3.6-27B ERROR (it resolves the wrong bridge B' and "
+    "answers hop2(B')): re-run the wrong-bridge screen/gate for a new model",
+    "wrong_bridge_true": "contrast arm of wrong_bridge (same items): re-gate with wrong_bridge",
 }
 # What a family's capability check does NOT cover, and what to do about it.
 PARTIAL: dict[str, str] = {
