@@ -95,7 +95,8 @@ def edit(
 
 def ablate(dirs: dict[int, Any], record: dict[int, Any]) -> Callable[[int, Any], Any]:
     """Project ``dirs[layer]`` out of every edited row, recording the signed coefficient removed
-    per row in ``record[layer]`` (the magnitudes ``replay`` reuses)."""
+    per row in ``record[layer]`` (the magnitudes ``replay`` reuses). For a unit direction this is
+    the ported ``clamp`` with one atom and target 0."""
 
     def fn(layer: int, x: Any) -> Any:
         u = dirs[layer]
@@ -115,6 +116,68 @@ def replay(record: dict[int, Any], dirs: dict[int, Any]) -> Callable[[int, Any],
         return x - record[layer][:, None] * dirs[layer]
 
     return fn
+
+
+# ---------------------------------------------------------------- the clamp swap, ported
+#
+# From J++ (Ayonrinde and Lindsey; https://github.com/safety-research/jpp_lens at commit
+# 93f02cd6c27db765abb127f20eff656bb5d27340, Apache-2.0; see NOTICE.md):
+# `workspace_lens/interventions/interventions.py` (`Clamp`, `NEAR_PARALLEL_ABS_COSINE`),
+# `lens_evals/causal_evals/runner.py` (`_swapped_coordinate_clamp`) and
+# `lens_evals/causal_evals/probe_swap.py` (`_RANDOM_NULL_POOL`). Changes: functions over this
+# module's `edit` hooks instead of `Intervention` classes; a basis is passed as `(atoms, pinv)`.
+
+NEAR_PARALLEL_ABS_COSINE = 0.999  # |cos| above this: a 2-vector pinv is ill-conditioned
+# unrelated common nouns for the matched-norm random-direction null
+RANDOM_NULL_POOL = ("table", "window", "pencil", "carpet", "engine")
+RANDOM_NULL_POOL += ("ladder", "button", "pillow", "basket", "mirror")
+
+
+def clamp_basis(*atoms: Any) -> tuple[Any, Any]:
+    """``(V, pinv(V))`` for unit atom directions: ``V`` is ``[d, K]`` fp32, so ``x @ pinv(V).T``
+    are the residual's lens coordinates ``c = V⁺h`` (J++ ``Clamp.__init__``)."""
+    import torch
+
+    v = torch.stack(list(atoms), dim=1).float()
+    return v, torch.linalg.pinv(v)
+
+
+def coords(bases: dict[int, Any], record: dict[int, Any]) -> Callable[[int, Any], Any]:
+    """Record each row's lens coordinates ``x @ pinv(V).T`` per layer and leave ``x`` unchanged:
+    the clean pass the clamp swap pins its targets to (J++ reads them off its clean pass)."""
+
+    def fn(layer: int, x: Any) -> Any:
+        record[layer] = x @ bases[layer][1].T
+        return x
+
+    return fn
+
+
+def clamp(bases: dict[int, Any], targets: dict[int, Any]) -> Callable[[int, Any], Any]:
+    """J++ ``Clamp``: pin each row's coordinates on the atoms to ``targets[layer]`` (``[rows, K]``)
+    and touch nothing else, ``h <- h + V(c* - c)`` with ``c = pinv(V) h``. Afterwards
+    ``pinv(V) h == c*`` and the component of ``h`` orthogonal to ``span(V)`` is unchanged.
+    With one unit atom and ``c* = 0`` this is ``ablate``'s projection."""
+
+    def fn(layer: int, x: Any) -> Any:
+        atoms, pinv = bases[layer]
+        return x + (targets[layer] - x @ pinv.T) @ atoms.T
+
+    return fn
+
+
+def swapped_targets(clean_coords: Any, scale: float) -> Any:
+    """The clamp swap's targets (J++ ``_swapped_coordinate_clamp``): the clean pass's coordinates
+    on ``[source, target]`` with the two exchanged and multiplied by ``scale``; Gurnee et al.
+    (2026)'s ``h + V(sigma(c) - c)`` pinned to clean values at every band layer and position."""
+    out = clean_coords.clone()
+    out[:, 0] = scale * clean_coords[:, 1]
+    out[:, 1] = scale * clean_coords[:, 0]
+    return out
+
+
+def abs_cosine(a: Any, b: Any) -> float:
+    return float((a @ b).abs() / (a.norm() * b.norm()))
 
 
 def score(model: Any, ids: list[int], p: int) -> dict[str, Any]:
