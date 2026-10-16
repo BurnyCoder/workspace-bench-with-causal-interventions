@@ -243,3 +243,38 @@ def test_cli_writes_one_file_per_family(tmp_path, monkeypatch):
     written = json.loads((tmp_path / "poetry" / "capable.json").read_text())
     assert written["model"] == "m" and written["aggregate"]["gate_rate"] == 1.0
     assert written["threshold"] == 0.8 and written["greedy"] is True
+
+
+def test_local_answers_replace_the_api_and_only_grades_are_calls(tmp_path, monkeypatch):
+    asked = []
+
+    def local(family, questions, draw_ids, **kw):
+        asked.append((family, [q.id for q in questions], draw_ids, kw["model"], kw["system"]))
+        return {f"{family}|{q.id}|d{d}": {"answer": "right"} for q in questions for d in draw_ids}
+
+    def grades_only(calls, **kw):
+        assert all(c.system == caprun.GRADE_SYSTEM for c in calls), "an answer went to the API"
+        return _answers(lambda i, d: None)(calls, **kw)
+
+    monkeypatch.setattr(caprun, "answer_locally", local)
+    monkeypatch.setattr(caprun, "run_calls", grades_only)
+    monkeypatch.setattr(caprun, "build", lambda f: [capq.Question("i", "ask", ["g"])])
+    r = caprun.run_family(
+        "poetry", model="org/tiny", judge=_judge(), out=tmp_path, draws=2, local=True
+    )
+    assert asked == [("poetry", ["i"], [caprun.GREEDY, 0, 1], "org/tiny", caprun.ANSWER_SYSTEM)]
+    assert r["answerer"] == "local" and r["reasoning"] is None
+    assert r["rows"][0]["passes_gate"] and r["aggregate"]["gate_rate"] == 1.0
+
+
+def test_cli_local_flag_reaches_the_runner(tmp_path, monkeypatch):
+    seen = {}
+
+    def fake(name, **kw):
+        seen.update(kw)
+        return {"family": name, "dry_run": True, "n_items": 1, "n_calls": 1}
+
+    monkeypatch.setattr(caprun, "run_family", fake)
+    argv = ["capable", "model=org/tiny", "families=poetry", "local=True", "device=cpu"]
+    assert main([*argv, "dry_run=True"]) == 0
+    assert seen["local"] is True and seen["device"] == "cpu"
