@@ -545,6 +545,7 @@ class Produce(Command):
         self.limit = 0
         self.items = None
         self.device = "cuda"
+        self.opts = None  # comma list of KEY=VALUE method fields (a lens artifact, alpha, k)
 
     def finalize(self) -> None:
         self.method = str(self.method)
@@ -566,6 +567,7 @@ class Produce(Command):
         self.limit = _int(self.limit)
         self.items = _strs(self.items)
         self.device = str(self.device)
+        self.opts = parse_opts(_strs(self.opts) or [])
 
     def execute(self) -> int:
         from wsbench.produce import METHODS, Producer, write
@@ -579,7 +581,7 @@ class Produce(Command):
         if self.family and self.family not in readplan.families():
             print(f"unknown family {self.family!r}", file=sys.stderr)
             return EXIT_USAGE
-        producer = Producer.load(self.model, self.method, device=self.device)
+        producer = Producer.load(self.model, self.method, device=self.device, **self.opts)
         if self.family:
             out = self.out or Path("outputs/readouts") / self.method / f"{self.family}.jsonl"
             path = producer.run_family(

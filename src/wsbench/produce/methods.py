@@ -2,7 +2,7 @@
 ranked token list for the vector lenses, free text for the verbalizers. All of them share the
 ``Method`` protocol so the producer treats them alike."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -178,6 +178,7 @@ class OLens:
     name: str = "olens"
     layers: list[int] | None = None
     lora: str = "agu18dec/local-workspace:ckpts/ao/rl/s3d.ddp600.s0/iter_000600"
+    repo_type: str = "dataset"  # of a ``repo:subdir`` lora; neuronpedia's lenses are "model"
     alpha: float = 16000.0
     prompt: str = (
         "An activation vector from layer {layer} of a language model is enclosed in activation "
@@ -194,7 +195,7 @@ class OLens:
 
         repo, _, sub = self.lora.partition(":")
         local = (
-            snapshot_download(repo, repo_type="dataset", allow_patterns=[f"{sub}/*"])
+            snapshot_download(repo, repo_type=self.repo_type, allow_patterns=[f"{sub}/*"])
             if sub
             else snapshot_download(repo)
         )
@@ -362,9 +363,13 @@ METHODS: dict[str, type] = {
 
 
 def method(spec: str | Method, **kw: Any) -> Any:
-    """A method instance from its name (``"jlens"``) or an instance passed through."""
+    """A method instance from its name (``"jlens"``) or an instance passed through. A string
+    value for a numeric field (``alpha="60"`` from the CLI's ``opts=``) takes that field's type."""
     if isinstance(spec, str):
         if spec not in METHODS:
             raise KeyError(f"unknown method {spec!r}; known {sorted(METHODS)}")
-        return METHODS[spec](**kw)
+        cls = METHODS[spec]
+        num = {f.name: type(f.default) for f in fields(cls) if type(f.default) in (int, float)}
+        kw = {k: num[k](v) if isinstance(v, str) and k in num else v for k, v in kw.items()}
+        return cls(**kw)
     return spec
