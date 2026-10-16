@@ -122,6 +122,7 @@ def run_set(name: str, out: Path, model: str, band: Sequence[int], limit: int) -
     from wsbench.produce import Backend, JLens
     from wsbench.produce.intervene import ablate, edit, kl, replay, score, unit
 
+    torch.set_grad_enabled(False)  # inference only; also keeps W_U's fp32 copy out of autograd
     b = Backend.load(model)
     tok = b.tokenizer
     jl = JLens(filename=JLENS_FILE)
