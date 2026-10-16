@@ -13,6 +13,7 @@ from wsbench.judge_config import JudgeConfig, ResolvedJudge, resolve
 from wsbench.llm import Spend, schema_block
 from wsbench.mcjudge import Call, Preflighter, run_calls
 
+from .local import answer_locally
 from .questions import PARTIAL, Question, build, threshold_for
 
 PROMPT_VERSION = "capable-2026-09-18"
@@ -73,11 +74,15 @@ def run_family(
     concurrency: int = 64,
     rpm: float = 240.0,
     dry_run: bool = False,
+    local: bool = False,
+    device: str = "cuda",
 ) -> dict[str, Any]:
     """``draws`` sampled answers per item plus (by default) one greedy answer, each graded by
     ``judge``; identical answers to one item are graded once. An item passes its family's gate
     when the greedy answer is right AND the sampled rate reaches ``threshold``, the rule the banks
-    were built with. Cached under ``out/cells.jsonl``, so a re-run resumes."""
+    were built with. Cached under ``out/cells.jsonl``, so a re-run resumes. ``local=True``
+    answers with ``model`` as a Hugging Face checkpoint on ``device`` (``capable/local.py``);
+    only the grades are calls then."""
     questions = build(family)[: limit or None]
     bar = threshold_for(family, DEFAULT_THRESHOLD) if threshold is None else threshold
     reasoning = {"effort": reasoning_effort} if reasoning_effort else None
@@ -93,8 +98,19 @@ def run_family(
 
     with Cache(out / "cells.jsonl") as cache:
         by_temp = {d: (0.0 if d == GREEDY else temperature) for d in draw_ids}
+        on_machine = local and not dry_run  # a local dry run still prints the API answer prompt
         replies: dict[str, dict | None] = {}
-        for temp in sorted(set(by_temp.values())):
+        if on_machine:
+            replies |= answer_locally(
+                family,
+                questions,
+                draw_ids,
+                model=model,
+                system=ANSWER_SYSTEM,
+                temperature=temperature,
+                device=device,
+            )
+        for temp in [] if on_machine else sorted(set(by_temp.values())):
             calls = [
                 Call(
                     key=f"{family}|{q.id}|d{d}",
@@ -216,7 +232,8 @@ def run_family(
         "draws": draws,
         "greedy": greedy,
         "temperature": temperature,
-        "reasoning": answerer.reasoning,
+        "answerer": "local" if local else "openrouter",
+        "reasoning": None if local else answerer.reasoning,
         "threshold": bar,
         "min_decided": floor,
         "partial": PARTIAL.get(family),
