@@ -75,6 +75,13 @@ identified by label prefix.
   `evals/jlens_concept_pr/gen-jlens-pr-jlens/` that the family scores against. The numeric
   helpers in `src/wsbench/evals/jlens_concept_pr/{concept_pr,token_types}.py` are this repo's
   own code (MIT); no `anthropics/jacobian-lens` source is vendored.
+- Fetched at runtime and not redistributed:
+  - `data/experiments/probe-swap.json` (90 two-hop prompts) from `anthropics/jacobian-lens`
+    commit `581d398613e5602a5af361e1c34d3a92ea82ba8e`, read by `scripts/causal_check.py`
+    (`docs/causal.md`);
+  - neuronpedia's Qwen3.5-0.8B J-lens and oracle LoRA (`qwen3.5-0.8b/jlens/`,
+    `qwen3.5-0.8b/oracle/`; the model card's licence is Apache-2.0), used by
+    `docs/small_model.md` and `docs/causal.md`.
 - Licence of the referenced code: Apache License, Version 2.0
   (http://www.apache.org/licenses/LICENSE-2.0). Copyright Anthropic. Licensed under the Apache
   License, Version 2.0 (the "License"); you may not use that code except in compliance with the

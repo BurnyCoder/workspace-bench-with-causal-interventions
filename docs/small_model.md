@@ -201,6 +201,13 @@ Readout excerpts (top tokens, best first):
 **Against the 27B: consistent.** The O-lens gives 0.63, 0.77 and 0.90 against the 27B's 0.99,
 1.00 and 1.00, with the same family ordering.
 
+## Follow-up: is the read bridge used?
+
+[causal.md](causal.md) ablates the bridge's J-lens direction, on these banks and the paper's
+probe-swap prompts. The answer breaks about four times as much as under an equal edit along a
+same-category concept, and more where the J-lens reads the bridge. The J-lens readings on this
+model track a direction the model uses. The O-lens was not tested.
+
 ## What the 3-item run got wrong
 
 - **Competence.** The first three items of each bank are among the easiest. The gate passed 6 of

@@ -287,7 +287,8 @@ Two families are model-specific by construction and must be re-gated rather than
 **moral_rationale**, whose per-item reasons are written for the side this model takes.
 A model that is not on OpenRouter is gated on the local GPU with `local=True`;
 [docs/small_model.md](docs/small_model.md) runs Qwen3.5-0.8B through a slice of the bench end to
-end. [AGENTS.md](AGENTS.md) has the per-family table, the sanity checks to run before trusting a
+end, and [docs/causal.md](docs/causal.md) checks causally, by the J-lens paper's targeted ablation,
+that the bridges the J-lens reads are used. [AGENTS.md](AGENTS.md) has the per-family table, the sanity checks to run before trusting a
 number, and what has made an item harder so far.
 
 ## Judges
