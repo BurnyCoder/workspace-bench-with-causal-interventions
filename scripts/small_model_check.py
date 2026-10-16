@@ -4,6 +4,7 @@
 
 A dev script, not part of the package:
     python scripts/small_model_check.py raw --out outputs/small_model_n30 --limit 30
+    python scripts/small_model_check.py null --out outputs/small_model_n30 --arm olens
     python scripts/small_model_check.py summary --out outputs/small_model_n30
 """
 
@@ -94,6 +95,39 @@ def _fmt(flags: list[bool]) -> str:
     return f"{sum(flags)}/{len(flags)} [{lo:.2f}, {hi:.2f}]"
 
 
+def _targets() -> dict[str, list[str]]:
+    out: dict[str, list[str]] = {}
+    for fam in FAMILIES:
+        _, items = load_bank(REPO_ROOT / "evals" / fam / "items.json")
+        out |= {it["id"]: [fold(t) for t in item_targets(it)] for it in items}
+    return out
+
+
+def null(out: Path, arm: str) -> None:
+    """A derangement null: within each family every item's readouts are relabelled as the item
+    ``d`` places later (cyclic, bank order), with the smallest ``d`` at which no item meets one
+    sharing a target. Judging ``<arm>_null`` scores each readout against another item's targets."""
+    targets = _targets()
+    for fam in FAMILIES:
+        rows = _jsonl(out / "readouts" / arm / f"{fam}.jsonl")
+        ids = list(dict.fromkeys(r["id"] for r in rows))
+
+        def clashes(d: int, ids: list[str] = ids) -> int:
+            n = len(ids)
+            return sum(
+                bool(set(targets[i]) & set(targets[ids[(k + d) % n]])) for k, i in enumerate(ids)
+            )
+
+        d = min(range(1, len(ids)), key=lambda d: (clashes(d), d))
+        to = {i: ids[(k + d) % len(ids)] for k, i in enumerate(ids)}
+        dst = out / "readouts" / f"{arm}_null" / f"{fam}.jsonl"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(
+            "".join(json.dumps(r | {"id": to[r["id"]]}, ensure_ascii=False) + "\n" for r in rows)
+        )
+        print(f"{fam}: shift {d}, {clashes(d)} shared-target pairs -> {dst}")
+
+
 def _hit(row: dict, targets: list[str]) -> bool:
     """An English target verbatim: a whole token of a bag, or a whole word of prose."""
     if "tokens" in row:
@@ -123,14 +157,15 @@ def summary(out: Path) -> None:
         chat = sum(gate[i]["chat"] for i in ids)
         print(f"| {fam} | {chat}/{len(ids)} | {raw_cell} | {sum(can[i] for i in ids)}/{len(ids)} |")
 
+    arms = [*ARMS, *(f"{a}_null" for a in ARMS if (out / "judged" / f"{a}_null").exists())]
     judged = {
         (arm, fam): json.loads((out / "judged" / arm / fam / "results.json").read_text())["rows"]
-        for arm in ARMS
+        for arm in arms
         for fam in FAMILIES
     }
     print("\n## Judged pass rate (any judged layer), [95% bootstrap CI]\n")
     print("| arm | " + " | ".join(FAMILIES) + " |\n|---|" + "---|" * len(FAMILIES))
-    for arm in ARMS:
+    for arm in arms:
         cells = [_fmt([r["pass"] is True for r in judged[(arm, f)]]) for f in FAMILIES]
         print(f"| {arm} | " + " | ".join(cells) + " |")
 
@@ -153,10 +188,7 @@ def summary(out: Path) -> None:
             + " |"
         )
 
-    targets = {}
-    for fam in FAMILIES:
-        _, items = load_bank(REPO_ROOT / "evals" / fam / "items.json")
-        targets |= {it["id"]: [fold(t) for t in item_targets(it)] for it in items}
+    targets = _targets()
     layers = sorted(
         {r["layer"] for r in _jsonl(out / "readouts" / ARMS[0] / f"{FAMILIES[0]}.jsonl")}
     )
@@ -175,9 +207,15 @@ def summary(out: Path) -> None:
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("command", choices=("raw", "summary"))
+    ap.add_argument("command", choices=("raw", "null", "summary"))
+    ap.add_argument("--arm", default="olens")
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--model", default="Qwen/Qwen3.5-0.8B")
     ap.add_argument("--limit", type=int, default=30)
     ns = ap.parse_args()
-    raw(ns.out, ns.model, ns.limit) if ns.command == "raw" else summary(ns.out)
+    if ns.command == "raw":
+        raw(ns.out, ns.model, ns.limit)
+    elif ns.command == "null":
+        null(ns.out, ns.arm)
+    else:
+        summary(ns.out)
