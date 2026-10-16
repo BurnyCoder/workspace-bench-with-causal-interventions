@@ -285,7 +285,9 @@ wsbench capable model=google/gemini-3.8-flash families=poetry,moral_rationale dr
 Two families are model-specific by construction and must be re-gated rather than re-scored:
 **poetry**, whose scored latent is the rhyme word this model would commit to, and
 **moral_rationale**, whose per-item reasons are written for the side this model takes.
-[AGENTS.md](AGENTS.md) has the per-family table, the sanity checks to run before trusting a
+A model that is not on OpenRouter is gated on the local GPU with `local=True`;
+[docs/small_model.md](docs/small_model.md) runs Qwen3.5-0.8B through a slice of the bench end to
+end. [AGENTS.md](AGENTS.md) has the per-family table, the sanity checks to run before trusting a
 number, and what has made an item harder so far.
 
 ## Judges
