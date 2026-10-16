@@ -106,9 +106,9 @@ class JLens:
         self._jac = _load_jacobians(self.repo, self.filename, backend.device)
         self._w_u = backend.unembed.float()
 
-    def read(self, h: Any, layer: int) -> Readout:
-        import torch
-
+    def scores(self, h: Any, layer: int) -> Any:
+        """Every vocabulary token's readout score at ``layer``: ``h · v_t / ‖v_t‖`` with the
+        J-lens vector ``v_t = W_U[t] @ J[layer]``."""
         b = self._b
         assert b is not None and self._jac is not None
         if layer >= self._jac.shape[0]:
@@ -116,10 +116,15 @@ class JLens:
         w_u = self._w_u
         if layer not in self._denom:
             self._denom[layer] = (w_u @ self._jac[layer]).norm(dim=1).clamp_min(1e-9)
-        scores = ((h.to(b.device) @ self._jac[layer].T) @ w_u.T) / self._denom[layer]
-        vals, ids = torch.topk(scores, self.k)
+        return ((h.to(b.device) @ self._jac[layer].T) @ w_u.T) / self._denom[layer]
+
+    def read(self, h: Any, layer: int) -> Readout:
+        import torch
+
+        assert self._b is not None
+        vals, ids = torch.topk(self.scores(h, layer), self.k)
         return Readout(
-            tokens=display_tokens(b.tokenizer, ids.tolist()),
+            tokens=display_tokens(self._b.tokenizer, ids.tolist()),
             scores=[round(v, 4) for v in vals.tolist()],
         )
 
