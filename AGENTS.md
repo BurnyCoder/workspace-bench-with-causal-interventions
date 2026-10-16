@@ -123,6 +123,12 @@ derangement null.
   the model's computation.
 - For a real run: gate first and score only what passes, judge the small model's latent band
   rather than a scaled 27B grid, and carry a null.
+- Causally ([docs/causal.md](docs/causal.md)), the bridge the J-lens reads is used:
+  - projecting its J-lens direction out costs 2.78 nats of log p(answer), against 0.72 for an
+    equal edit along a same-category concept (66 clean-correct prompts, including the paper's
+    probe-swap set);
+  - the logit-lens direction barely matters;
+  - the effect grows with the lens's reading.
 
 ## Sanity checks before you trust a number
 
