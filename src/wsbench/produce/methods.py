@@ -186,6 +186,7 @@ class OLens:
         "activation, each as a '- ' bullet on its own line."
     )
     sampling: Sampling = field(default_factory=Sampling)
+    batch: int = 16  # cells per generate call in read_many
     _b: Backend | None = field(default=None, repr=False)
     _slots: dict[int, tuple[list[int], int]] = field(default_factory=dict, repr=False)
 
@@ -232,30 +233,51 @@ class OLens:
         raise ValueError("no enclosed ideograph survives as a single token in the carrier prompt")
 
     def read(self, h: Any, layer: int) -> Readout:
+        return self.read_many([h], [layer])[0]
+
+    def read_many(self, hs: list[Any], layers: list[int]) -> list[Readout]:
+        """Several cells, ``batch`` at a time in one ``generate``. Decoding a small model is
+        bound by per-token overhead, not batch size, so an item's layers cost about one cell's
+        time. Only carriers of one length share a batch (a layer's digits set the length), so no
+        cell is padded and each one is generated exactly as alone."""
         import torch
 
         b = self._b
         assert b is not None
-        ids, slot = self._carrier(layer)
+        by_len: dict[int, list[int]] = {}
+        for i, layer in enumerate(layers):
+            by_len.setdefault(len(self._carrier(layer)[0]), []).append(i)
+        chunks = [
+            ix[j : j + self.batch] for ix in by_len.values() for j in range(0, len(ix), self.batch)
+        ]
         embed = b.model.get_input_embeddings()
-        with torch.no_grad():
-            e = embed(torch.tensor([ids], device=b.device)).clone()
-            v = h.to(b.device).float()
-            e[0, slot, :] = (self.alpha * v / v.norm().clamp_min(1e-9)).to(e.dtype)
-            s = self.sampling
-            out = b.model.generate(
-                inputs_embeds=e,
-                attention_mask=torch.ones(1, len(ids), device=b.device, dtype=torch.long),
-                do_sample=s.temperature > 0,
-                temperature=max(s.temperature, 1e-5),
-                top_p=s.top_p,
-                top_k=s.top_k,
-                max_new_tokens=s.max_new_tokens,
-                num_return_sequences=s.k,
-                pad_token_id=b.tokenizer.pad_token_id or b.tokenizer.eos_token_id,
-            )
-        texts = b.tokenizer.batch_decode(out, skip_special_tokens=True)
-        return Readout(samples=[t.strip() for t in texts])
+        s = self.sampling
+        out: list[Readout] = [Readout()] * len(hs)
+        for chunk in chunks:
+            with torch.no_grad():
+                rows = []
+                for i in chunk:
+                    ids, slot = self._carrier(layers[i])
+                    e = embed(torch.tensor(ids, device=b.device)).clone()
+                    v = hs[i].to(b.device).float()
+                    e[slot, :] = (self.alpha * v / v.norm().clamp_min(1e-9)).to(e.dtype)
+                    rows.append(e)
+                e = torch.stack(rows)
+                gen = b.model.generate(
+                    inputs_embeds=e,
+                    attention_mask=torch.ones(e.shape[:2], device=b.device, dtype=torch.long),
+                    do_sample=s.temperature > 0,
+                    temperature=max(s.temperature, 1e-5),
+                    top_p=s.top_p,
+                    top_k=s.top_k,
+                    max_new_tokens=s.max_new_tokens,
+                    num_return_sequences=s.k,
+                    pad_token_id=b.tokenizer.pad_token_id or b.tokenizer.eos_token_id,
+                )
+            texts = b.tokenizer.batch_decode(gen, skip_special_tokens=True)
+            for n, i in enumerate(chunk):  # generate repeats each input k times, in input order
+                out[i] = Readout(samples=[t.strip() for t in texts[n * s.k : (n + 1) * s.k]])
+        return out
 
 
 @dataclass
