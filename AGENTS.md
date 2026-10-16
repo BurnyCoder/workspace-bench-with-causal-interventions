@@ -113,10 +113,16 @@ rewritten per item. This is the family to fix first when porting.
 ## Measured: a <1B model on a slice
 
 [docs/small_model.md](docs/small_model.md) runs Qwen3.5-0.8B through multihop, multilingual and
-typo (3 items each) with the logit lens and neuronpedia's 0.8B J-lens and O-lens. The pipeline
-ports cleanly. Two things to change for a real run: judge the small model's own latent band (L16–L20
-of 24, not a scaled 27B grid), and gate in the bank's format too, because the chat-turn gate and
-the raw continuation disagree on 4 of 6 items.
+typo (30 items each) with the logit lens and neuronpedia's 0.8B J-lens and O-lens, plus a
+derangement null.
+- The pipeline ports cleanly, and the vector lenses behave: depth peaks at L18–L20 of 24.
+- The model does only about a third of multihop and multilingual. The chat-turn gate and the raw
+  continuation rarely agree on which third.
+- The O-lens beats its null by a wide margin (0.63–0.90 against 0.07) but does not follow the
+  gate. On a model this small it reports the oracle's own inference about the prompt as much as
+  the model's computation.
+- For a real run: gate first and score only what passes, judge the small model's latent band
+  rather than a scaled 27B grid, and carry a null.
 
 ## Sanity checks before you trust a number
 
