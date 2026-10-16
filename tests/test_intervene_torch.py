@@ -123,3 +123,58 @@ def test_score_matches_a_naive_full_logits_computation():
     assert torch.allclose(got["next"], lp[p - 1])
     assert kl(got["next"], got["next"]) == pytest.approx(0.0, abs=1e-6)
     assert kl(got["next"], got["next"].roll(1), exclude=[0, 1]) > 0
+
+
+def _basis():
+    from wsbench.produce.intervene import clamp_basis, unit
+
+    torch.manual_seed(3)
+    u = unit(torch.randn(6))
+    w = unit(torch.randn(6) - (torch.randn(6) @ u) * u)
+    w = unit(w - (w @ u) * u)
+    return u, unit(0.8 * u + 0.6 * w), clamp_basis(u, unit(0.8 * u + 0.6 * w))
+
+
+def test_coords_record_without_editing():
+    from wsbench.produce.intervene import coords, edit
+
+    blocks, x = _blocks(), torch.randn(1, 5, 6)
+    _, _, basis = _basis()
+    clean = _run(blocks, x)
+    rec: dict = {}
+    with edit(blocks, [1], coords({1: basis}, rec), 1, 4):
+        seen = _run(blocks, x)
+    assert all(torch.equal(a, b) for a, b in zip(seen, clean, strict=True))
+    assert torch.allclose(rec[1], clean[1][0, 1:4] @ basis[1].T, atol=1e-5)
+
+
+def test_the_ported_clamp_hits_its_targets_inside_the_span_only():
+    from wsbench.produce.intervene import clamp, edit
+
+    blocks, x = _blocks(), torch.randn(1, 5, 6)
+    _, _, (atoms, pinv) = _basis()
+    clean = _run(blocks, x)
+    target = torch.tensor([[1.0, -2.0], [0.5, 0.5], [3.0, 0.0]])
+    with edit(blocks, [1], clamp({1: (atoms, pinv)}, {1: target}), 1, 4):
+        ed = _run(blocks, x)
+    assert torch.allclose(ed[1][0, 1:4] @ pinv.T, target, atol=1e-4)
+    delta = (ed[1] - clean[1])[0, 1:4]
+    assert torch.allclose(delta - delta @ (atoms @ pinv).T, torch.zeros_like(delta), atol=1e-5)
+    assert torch.equal(ed[1][0, 0], clean[1][0, 0]) and torch.equal(ed[1][0, 4], clean[1][0, 4])
+
+
+def test_the_scale_one_swap_is_a_reflection_and_ablate_is_a_one_atom_clamp():
+    from wsbench.produce.intervene import ablate, clamp, clamp_basis, swapped_targets, unit
+
+    u_s, u_t, (atoms, pinv) = _basis()
+    x = torch.randn(4, 6)
+    swapped = clamp({0: (atoms, pinv)}, {0: swapped_targets(x @ pinv.T, 1.0)})(0, x)
+    n = unit(u_s - u_t)
+    assert torch.allclose(swapped, x - 2 * (x @ n)[:, None] * n, atol=1e-5)
+    assert torch.allclose(swapped.norm(dim=-1), x.norm(dim=-1), atol=1e-5)
+    # unclamped twice is the identity: the reason every layer is pinned to clean coordinates
+    again = clamp({0: (atoms, pinv)}, {0: swapped_targets(swapped @ pinv.T, 1.0)})(0, swapped)
+    assert torch.allclose(again, x, atol=1e-5)
+    one = clamp_basis(u_s)
+    zero = clamp({0: one}, {0: torch.zeros(4, 1)})(0, x)
+    assert torch.allclose(zero, ablate({0: u_s}, {})(0, x), atol=1e-5)
