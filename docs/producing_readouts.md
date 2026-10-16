@@ -125,9 +125,10 @@ return the top-10 tokens with scores; `olens` verbalizes through its LoRA with t
 in the carrier prompt's `<activation>` slot as `alpha · unit(h)`, the adapter off while capturing
 and on while generating (an item's cells go through one `generate` per carrier length, `batch=16`
 at a time, since decoding a small model is bound by per-token overhead); `nla` runs Karvonen's
-reader with the vector added norm-matched at its marker token. Methods are plain classes behind one `read(h, layer)` protocol, so a new lens is a
-few lines. Sampling for the verbalizers is `Sampling(temperature=1.0, top_p=0.95, top_k=64,
-max_new_tokens=256, k=1)`, the settings the in-house arms used.
+reader with the vector added norm-matched at its marker token. Methods are plain classes behind
+one `read(h, layer)` protocol, so a new lens is a few lines. Sampling for the verbalizers is
+`Sampling(temperature=1.0, top_p=0.95, top_k=64, max_new_tokens=256, k=1)`, the settings the
+in-house arms used.
 
 Two spellings, on purpose: the read-site `token` is `tokenizer.decode([id])`, exactly what the
 banks store (`"\n"`, `" öffnen"`, `"<|im_end|>"`); the ranked `tokens` of a token lens are the
