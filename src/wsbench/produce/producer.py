@@ -165,10 +165,20 @@ class Producer:
             return
         idx = [p % len(rendered) for p in pos]  # a plan may report negative offsets
         acts = self.backend.capture(rendered.ids, layers, idx)
-        for layer in layers:
-            h_all = acts[layer]
-            for i, (p, j) in enumerate(zip(pos, idx, strict=True)):
-                yield Row(item_id, layer, p, rendered.decoded[j], self.method.read(h_all[i], layer))
+        cells = [
+            (layer, i, p, j)
+            for layer in layers
+            for i, (p, j) in enumerate(zip(pos, idx, strict=True))
+        ]
+        hs = [acts[layer][i] for layer, i, _p, _j in cells]
+        read_many = getattr(self.method, "read_many", None)  # a verbalizer batches the item
+        readouts = (
+            read_many(hs, [c[0] for c in cells])
+            if read_many
+            else [self.method.read(h, c[0]) for h, c in zip(hs, cells, strict=True)]
+        )
+        for (layer, _i, p, j), r in zip(cells, readouts, strict=True):
+            yield Row(item_id, layer, p, rendered.decoded[j], r)
 
 
 def write(rows: Iterable[Row], path: Path | str) -> Path:
