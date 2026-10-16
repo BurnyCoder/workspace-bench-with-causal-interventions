@@ -135,3 +135,79 @@ def test_ratio_of_means_and_the_summary_tables():
     assert "| multihop | 2 | 1 | 1 | 1 |" in text
     assert "KL ratio, J / logit: 2.00" in text
     assert "ablate_j | -2.50" in text and "0/2" in text
+
+
+def test_swap_groups_normalise_language_and_category():
+    cc = _script()
+    assert cc.swap_group("multilingual", "b3-ml-es-opposite-hot") == "es-opposite"
+    assert cc.swap_group("multilingual", "french-number-seven") == "fr-number"
+    assert cc.swap_group("multilingual", "frn-month-after-jun") == "fr-month"
+    assert cc.swap_group("multihop", "holiday-christmas-monthnum") == "holiday-monthnum"
+
+
+def test_swap_partner_skips_overlapping_bridges_and_answers():
+    cc = _script()
+    rows = [
+        {"id": "a", "swap_group": "g", "bridge": ["night"], "answer": "day"},
+        {"id": "b", "swap_group": "g", "bridge": ["day"], "answer": "noon"},  # bridge = a's answer
+        {"id": "c", "swap_group": "g", "bridge": ["Mexico"], "answer": "Day"},  # same answer
+        {"id": "d", "swap_group": "g", "bridge": ["Night"], "answer": "dusk"},  # same bridge
+        {"id": "e", "swap_group": "h", "bridge": ["Brazil"], "answer": "Portuguese"},
+        {"id": "f", "swap_group": "g", "bridge": ["cold"], "answer": "hot"},
+    ]
+    assert cc.swap_partner(rows, 0)["id"] == "f"
+    assert cc.swap_partner(rows, 4) is None  # alone in its group
+
+
+def test_wilson_and_mcnemar():
+    cc = _script()
+    lo, hi = cc.wilson(5, 10)
+    assert lo == pytest.approx(0.2366, abs=1e-3) and hi == pytest.approx(0.7634, abs=1e-3)
+    assert cc.mcnemar(0, 0) == 1.0
+    assert cc.mcnemar(6, 0) == pytest.approx(2 / 64)  # two-sided exact binomial
+    assert cc.mcnemar(3, 3) == 1.0
+
+
+def _swap_row(id_, set_="probe_swap", j=True, logit=False, null=False, zero=False, **kw):
+    cell = {
+        "success": False,
+        "success_top5": False,
+        "success_word_top1": False,
+        "greedy_swap": False,
+        "orig_correct": True,
+        "dlogp_swap": 0.0,
+        "dlogp_orig": 0.0,
+        "leak": False,
+    }
+    by = {"j_swap": j, "logit_swap": logit, "null_swap": null}
+    row = {c: {"1.0": cell | {"success": ok}} for c, ok in by.items()}
+    return (
+        row
+        | {
+            "set": set_,
+            "id": id_,
+            "bridge": " " + id_,
+            "answer": "ans-" + id_,
+            "zero": cell | {"success": zero},
+            "clean_correct": True,
+            "clean_success_rank": 7,
+            "rank_by_layer": {"9": 3},
+            "partner_known": None,
+        }
+        | kw
+    )
+
+
+def test_the_swap_summary_counts_primary_trials_and_pairs():
+    cc = _script()
+    rows = [
+        _swap_row("a"),
+        _swap_row("b", logit=True),
+        _swap_row("c", j=False),
+        _swap_row("d", clean_success_rank=1),  # already the top-1: not a primary trial
+        {"set": "multihop", "id": "x", "excluded": "no swap partner"},
+    ]
+    text = cc.summarize_swaps(rows)
+    assert "| pooled | 2/3 = 67%" in text
+    assert "| probe_swap | 4 | 0 | 4 | 4 | 3 |" in text
+    assert "| logit_swap | 1 | 0 | 1 |" in text and "| null_swap | 2 | 0 | 0.5 |" in text
