@@ -109,6 +109,15 @@ wsbench produce family=poetry method=logit_lens out=outputs/readouts/mine/poetry
 wsbench produce text="The athlete Muhammad Ali plays the sport of" method=jlens positions=-1 layers=20,36,60
 ```
 
+`opts=KEY=VALUE,...` sets the method's own fields (its artifact, `alpha`, `k`), so another
+model's lenses are named from the shell. neuronpedia publishes a J-lens and an oracle LoRA for
+Qwen3.5-0.8B; [small_model.md](small_model.md) runs both:
+
+```
+wsbench produce family=multihop model=Qwen/Qwen3.5-0.8B method=jlens layers=8,14,22 opts=filename=qwen3.5-0.8b/jlens/Salesforce-wikitext/Qwen3.5-0.8B_jacobian_lens.pt
+wsbench produce family=multihop model=Qwen/Qwen3.5-0.8B method=olens layers=8,14,22 opts=lora=neuronpedia/jacobian-lens:qwen3.5-0.8b/oracle,repo_type=model,alpha=60
+```
+
 What it does: renders the prompt the way the plan says (its chat template, thinking off),
 captures the residual stream after each requested decoder block in one forward pass, and hands
 each (layer, position) vector to the method. The vector lenses (`logit_lens`, `jlens`, `rlens`)
