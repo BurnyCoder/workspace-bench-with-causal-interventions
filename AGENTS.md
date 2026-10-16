@@ -19,7 +19,8 @@ Run the gate yourself before porting:
 
 ```
 wsbench capable model=<openrouter-model> families=poetry,moral_rationale draws=10
-wsbench capable model=<openrouter-model>                 # all 21 families that have a question
+wsbench capable model=<openrouter-model>                 # all 22 families that have a question
+wsbench capable model=<hf-checkpoint> local=True         # answered on this machine's GPU
 ```
 
 It asks each bank's own question and grades the answers with the repo judge. An item passes when
@@ -33,11 +34,12 @@ cached, so a re-run resumes. `dry_run=True` prints the first question and the gr
 makes no call.
 
 Two limits to know. The answering call goes through OpenRouter with a JSON schema and reasoning
-effort `minimal` by default (`reasoning_effort=` to change it), so it is not a raw continuation,
-and a model that reasons in hidden tokens can pass the no-chain-of-thought families
-(chain, brew, arithmetic) in a way the banks' own gate would not allow. And the check covers the
-answerable half of some gates only: `capable.json` carries a `partial` line saying what it
-misses.
+effort `minimal` by default (`reasoning_effort=` to change it); `local=True` asks the same chat
+turn of a Hugging Face checkpoint with thinking off (answers seeded and regenerated on a re-run,
+grades cached). Neither is a raw continuation, and a model that reasons in hidden tokens can pass
+the no-chain-of-thought families (chain, brew, arithmetic) in a way the banks' own gate would not
+allow. And the check covers the answerable half of some gates only: `capable.json` carries a
+`partial` line saying what it misses.
 
 ## Which families port, and which need work
 
@@ -107,6 +109,14 @@ on the new model and need their rhyme re-gated; the rest of the bank is usable.
 200 items and DeepSeek on 50. Every one of those items' YES-side and NO-side reasons was written
 for the side Qwen took, so the family cannot be read on either model until the reasons are
 rewritten per item. This is the family to fix first when porting.
+
+## Measured: a <1B model on a slice
+
+[docs/small_model.md](docs/small_model.md) runs Qwen3.5-0.8B through multihop, multilingual and
+typo (3 items each) with the logit lens and neuronpedia's 0.8B J-lens and O-lens. The pipeline
+ports cleanly. Two things to change for a real run: judge the small model's own latent band (L16–L20
+of 24, not a scaled 27B grid), and gate in the bank's format too, because the chat-turn gate and
+the raw continuation disagree on 4 of 6 items.
 
 ## Sanity checks before you trust a number
 
