@@ -420,6 +420,8 @@ class Capable(Command):
         self.concurrency = 64
         self.rpm = 240.0
         self.dry_run = False
+        self.local = False  # answer with `model` as a Hugging Face checkpoint on this machine
+        self.device = "cuda"
         self.out = ""
 
     def finalize(self) -> None:
@@ -435,6 +437,8 @@ class Capable(Command):
         self.concurrency = _int(self.concurrency)
         self.rpm = float(self.rpm)
         self.dry_run = _bool(self.dry_run)
+        self.local = _bool(self.local)
+        self.device = str(self.device)
         self.out = _path(self.out) if self.out else None
 
     def execute(self) -> int:
@@ -468,6 +472,8 @@ class Capable(Command):
                     concurrency=self.concurrency,
                     rpm=self.rpm,
                     dry_run=self.dry_run,
+                    local=self.local,
+                    device=self.device,
                 )
                 if self.dry_run:
                     n = r["n_items"]
