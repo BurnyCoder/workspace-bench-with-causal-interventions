@@ -90,6 +90,23 @@ identified by label prefix.
   either express or implied. See the License for the specific language governing permissions
   and limitations under the License.
 
+## J++ Lens — Ayonrinde and Lindsey / `safety-research/jpp_lens`
+
+- Source: K. Ayonrinde, J. Lindsey. *The J++ Lens.* Code: https://github.com/safety-research/jpp_lens
+  (Apache-2.0); write-up: https://www.lesswrong.com/posts/nc9dHfcB22JdMzGbr
+- Included: a port of its lens-coordinate swap into `src/wsbench/produce/intervene.py`, from
+  commit `93f02cd6c27db765abb127f20eff656bb5d27340`:
+  - `workspace_lens/interventions/interventions.py`: `Clamp` (as `clamp`) and
+    `NEAR_PARALLEL_ABS_COSINE`;
+  - `lens_evals/causal_evals/runner.py`: `_swapped_coordinate_clamp` (as `swapped_targets`);
+  - `lens_evals/causal_evals/probe_swap.py`: `_RANDOM_NULL_POOL`.
+- Changes: functions over this repo's `edit` hooks instead of `Intervention` classes, with
+  bases passed as `(atoms, pinv)`. `scripts/causal_check.py` follows its causal runner's trial
+  conventions (unit atoms per layer, every position but 0, clean-correct trials, the
+  answer-swap ceiling and the random-noun null).
+- Licence: Apache License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0); the terms
+  restated in the J-lens section above apply to the ported code.
+
 ## LMSYS-Chat-1M — Zheng et al. 2023
 
 - Source: https://huggingface.co/datasets/lmsys/lmsys-chat-1m
