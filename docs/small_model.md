@@ -203,10 +203,15 @@ Readout excerpts (top tokens, best first):
 
 ## Follow-up: is the read bridge used?
 
-[causal.md](causal.md) ablates the bridge's J-lens direction, on these banks and the paper's
-probe-swap prompts. The answer breaks about four times as much as under an equal edit along a
-same-category concept, and more where the J-lens reads the bridge. The J-lens readings on this
-model track a direction the model uses. The O-lens was not tested.
+[causal.md](causal.md) runs the J-lens paper's two causal tests on these banks and the paper's
+probe-swap prompts:
+- **Ablation.** Removing the bridge's J-lens direction breaks the answer about four times as
+  much as an equal edit along a same-category concept, and more where the J-lens reads the
+  bridge.
+- **Swap.** Clamping the bridge's J-lens coordinate to another concept's gives that concept's
+  answer in 31% of prompts, against 10% for the logit lens and 2% for a random-noun null.
+
+The J-lens readings on this model track a direction the model uses. The O-lens was not tested.
 
 ## What the 3-item run got wrong
 
