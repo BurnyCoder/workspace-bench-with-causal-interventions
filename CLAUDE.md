@@ -5,7 +5,8 @@ top-k "J-lens" tokens) surfaces what a model computes but never writes. Every fa
 into the shared package in `src/wsbench/` (client, judge config, cache, readout contract,
 results schema, registry, runner, CLI, `readplan` = the producer-facing read plan, `capable/` =
 the porting gate, `produce/` = the optional HF-transformers producer behind the `gpu` extra;
-`produce/intervene.py` = the residual-stream ablation of `scripts/causal_check.py`, docs/causal.md).
+`produce/intervene.py` = the residual-stream ablation and J++'s ported clamp swap behind
+`scripts/causal_check.py`, docs/causal.md).
 `plans/` is the 2026-09-15..17 design history of the nine-family restructure, not a current
 pointer (`plans/README.md`). Public docs: `README.md`, `NOTICE.md`, `CITATION.cff`.
 

@@ -128,7 +128,11 @@ derangement null.
     equal edit along a same-category concept (66 clean-correct prompts, including the paper's
     probe-swap set);
   - the logit-lens direction barely matters;
-  - the effect grows with the lens's reading.
+  - the effect grows with the lens's reading;
+  - it is sufficient too. Clamping the bridge's J-lens coordinate to another concept's (the
+    paper's swap, J++'s implementation) makes that concept's answer the top-1 in 13 of 42 prompts
+    (41–43% on the two-hop sets), against 4 for the logit-lens swap and 1 each for a random-noun
+    null and a zero clamp.
 
 ## Sanity checks before you trust a number
 
