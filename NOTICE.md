@@ -28,13 +28,13 @@ identified by label prefix.
 
 ## Agentic misalignment scenarios — Lynch et al. 2025 / `anthropic-experimental/agentic-misalignment`
 
-- Source: Lynch, Wright, Larson, Troy, Ritchie, Mindermann, Perez, Hubinger. *Agentic
+- Source: Lynch, Wright, Larson, Ritchie, Mindermann, Hubinger, Perez, Troy. *Agentic
   Misalignment: How LLMs Could Be Insider Threats.* Anthropic, 2025. arXiv:2510.05179. Code:
   https://github.com/anthropic-experimental/agentic-misalignment
 - Included: 18 of the 32 scenarios in `evals/agentic_misalignment/items.json` (the repo's
   18-condition grid: blackmail / leaking / murder × goal × urgency), generated with its
   `scripts/generate_prompts.py` and production system prompts.
-- Licence: MIT. Copyright (c) Anthropic. Permission is hereby granted, free of charge, to any
+- Licence: MIT. Copyright (c) 2025 Aengus Lynch. Permission is hereby granted, free of charge, to any
   person obtaining a copy of this software and associated documentation files, to deal in the
   software without restriction, subject to the inclusion of the copyright notice and this
   permission notice; the software is provided "as is", without warranty of any kind.
@@ -50,7 +50,9 @@ identified by label prefix.
 
 ## CHIVE — Karvonen et al.
 
-- Source: Karvonen, Ong, Kantamneni, Marks. *CHIVE.* arXiv:2608.16747.
+- Source: Karvonen, Ong, Kantamneni, Marks. *Would this change your answer? Evaluating
+  Explanations of LLM Behavior In The Wild with Counterfactual Experiments* (the CHIVE pipeline).
+  arXiv:2608.16747.
   https://github.com/adamkarvonen/chive
 - Included: the `[role]: content` transcript render contract used by `jailbreak_recognition`.
   No CHIVE code is vendored.
@@ -60,8 +62,10 @@ identified by label prefix.
 - Source: Choi, Huang, Schwettmann, Steinhardt. *Scalably Extracting Latent Representations of
   Users.* Transluce, 2025. https://transluce.org/user-modeling
 - Included: the `user_modeling` `selfdescribe` items are rows taken verbatim from the
-  SelfDescribe set; the `synthsys` items use system prompts from the SynthSysPre set; the
-  revealed-belief gate (≥ 8/10) is their criterion.
+  SelfDescribe set; the `synthsys` items use system prompts from the SynthSysPre set. The
+  idea of a revealed belief is theirs (their filter keeps a prompt when the model's probability
+  on the attribute exceeds its baseline by ε = 0.01); the ≥ 8/10 gate used here is the source
+  repo's, not a criterion stated in the Transluce write-up.
 - Licence: the Transluce release names the terms for its data; see that release before
   redistributing these items outside this benchmark.
 
@@ -92,7 +96,8 @@ identified by label prefix.
 
 ## J++ Lens — Ayonrinde and Lindsey / `safety-research/jpp_lens`
 
-- Source: K. Ayonrinde, J. Lindsey. *The J++ Lens.* Code: https://github.com/safety-research/jpp_lens
+- Source: K. Ayonrinde, J. Lindsey. *J++ Lens: Jacobian Filtering Enables More Faithful Workspace
+  Lenses.* LessWrong, 2026. Code: https://github.com/safety-research/jpp_lens
   (Apache-2.0); write-up: https://www.lesswrong.com/posts/nc9dHfcB22JdMzGbr
 - Included: a port of its lens-coordinate swap into `src/wsbench/produce/intervene.py`, from
   commit `93f02cd6c27db765abb127f20eff656bb5d27340`:
@@ -139,4 +144,5 @@ identified by label prefix.
 - Included: 74 pile-10k + 75 fineweb-edu 128-token prefixes seeded the `jlens_concept_pr`
   items (labels `pt-pile-*`, `pt-fineweb-*`; the manifest carries no source ids). Their text was
   carried in `evals/jlens_concept_pr/manifest.json` until 2026-09-17 and is no longer shipped.
-- Licence: ODC-BY (attribution required); the underlying web text retains its own copyright.
+- Licence: fineweb-edu is ODC-BY (attribution required); the `NeelNanda/pile-10k` dataset card
+  declares `bigscience-bloom-rail-1.0`. The underlying web text retains its own copyright.
