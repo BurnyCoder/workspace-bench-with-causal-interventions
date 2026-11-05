@@ -2,8 +2,8 @@
 
 The true-bridge contrast of `wrong_bridge`: the same 100 items, ids and read sites, scored against the TRUE bridge B that the model failed to use. Read the two side by side: a lens that tracks what the model computed should name B' (wrong_bridge) more often than B (this family); a lens that reads world knowledge about the subject may name B.
 
-Example: "Fact: The composer of Canon and Gigue in D died in the year" -> model answer `1750`
-(Bach's death year); true bridge Johann Pachelbel (1706), the model's bridge Johann Sebastian Bach.
+Example: "Fact: The composer of Canon and Gigue in D was born in the year" -> model answer `1685`
+(Bach's birth year); true bridge Johann Pachelbel (1653), the model's bridge Johann Sebastian Bach.
 
 ## Bank
 

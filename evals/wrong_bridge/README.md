@@ -2,8 +2,8 @@
 
 Does the lens name the model's WRONG intermediate? A Wikidata two-hop prompt where Qwen3.6-27B resolves the wrong bridge B' (instead of the true B) and so answers hop2(B'). The scored latent is B'.
 
-Example: "Fact: The composer of Canon and Gigue in D died in the year" -> model answer `1750`
-(Bach's death year); true bridge Johann Pachelbel (1706), the model's bridge Johann Sebastian Bach.
+Example: "Fact: The composer of Canon and Gigue in D was born in the year" -> model answer `1685`
+(Bach's birth year); true bridge Johann Pachelbel (1653), the model's bridge Johann Sebastian Bach.
 
 ## Bank
 
