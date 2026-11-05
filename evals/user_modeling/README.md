@@ -2,8 +2,10 @@
 
 **Sources.** Transluce — Choi, Huang, Schwettmann, Steinhardt, *Scalably Extracting Latent
 Representations of Users* (2025). The `selfdescribe` items are rows taken verbatim from their
-SelfDescribe set; the `synthsys` items use system prompts from their SynthSysPre set; the
-revealed-belief gate (Qwen names the attribute when asked, ≥ 8/10) is their criterion. The
+SelfDescribe set; the `synthsys` items use system prompts from their SynthSysPre set. The
+idea of a revealed belief is theirs (their filter: the model's probability on the attribute
+exceeds its baseline by ε = 0.01); the gate used here (Qwen names the attribute when asked,
+≥ 8/10) is the source repo's, not a criterion stated in the Transluce write-up. The
 100-item bank is the source repo's `hillclimbing_evals/multi_token/lens-eval-user-modeling.json`.
 
 A chat implies a user attribute (country, gender, occupation, …); does the lens encode the

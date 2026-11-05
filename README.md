@@ -110,7 +110,7 @@ commands with `PYTHONPATH=src`, because the editable install points at the main 
 - *Judged by:* the shared bank judge, one call per (item, layer): pass = the bridge's meaning is EXPRESSED in one sample (not clues it could be inferred from, and not the surface answer alone) with a verbatim quote verified against that sample; item passes at any layer.
 
 **Wrong-bridge multihop** — [`evals/wrong_bridge/README.md`](evals/wrong_bridge/README.md)
-- *What it is:* A Wikidata two-hop prompt where Qwen3.6-27B resolves the WRONG intermediate and so answers wrong ("Fact: The composer of Canon and Gigue in D died in the year" -> `1750` via *Bach*, not Pachelbel's 1706); does the lens name the model's wrong bridge at the last word of the prompt.
+- *What it is:* A Wikidata two-hop prompt where Qwen3.6-27B resolves the WRONG intermediate and so answers wrong ("Fact: The composer of Canon and Gigue in D was born in the year" -> `1685` via *Bach*, not Pachelbel's 1653); does the lens name the model's wrong bridge at the last word of the prompt.
 - *Example:* "Fact: The painter of Small Cowper Madonna died in the year" → model answer `1519`; target (the model's wrong bridge) `Leonardo da Vinci` (true bridge Raphael).
 - *Judged by:* the shared bank judge, one call per (item, layer): pass = a target concept is NAMED with a verbatim quote verified against one sample; item passes at any layer.
 
@@ -404,9 +404,10 @@ verdicts in `<out>/<family>/cells.jsonl`, so a re-run only pays for what is miss
   artifact.
 - **Chat and text corpora** — LMSYS-Chat-1M (Zheng et al. 2023, HF `lmsys/lmsys-chat-1m`; the
   LMSYS-Chat-1M Dataset License Agreement), DailyDialog (Li et al. 2017, HF `ConvLab/dailydialog`;
-  CC BY-NC-SA 4.0), `NeelNanda/pile-10k` and `HuggingFaceFW/fineweb-edu` sample-10BT (ODC-BY):
-  verbatim first user turns in the hallucination bank; the jlens_concept_pr items were seeded
-  from the same corpora (the seed text is no longer shipped, only labels and read positions).
+  CC BY-NC-SA 4.0), `NeelNanda/pile-10k` (BigScience BLOOM RAIL 1.0 on its dataset card) and
+  `HuggingFaceFW/fineweb-edu` sample-10BT (ODC-BY). LMSYS-Chat-1M (74) and DailyDialog (75)
+  supply the verbatim first user turns in the hallucination bank; the jlens_concept_pr items were
+  seeded from all four corpora (the seed text is no longer shipped, only labels and read positions).
 
 ## License
 
