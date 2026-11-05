@@ -11,8 +11,8 @@ paper's two causal tests on the bridge concept:
 
 Setup:
 - Model: Qwen/Qwen3.5-0.8B, 24 blocks, with neuronpedia's J-lens.
-- Items: 290 prompts. 66 of them are answered correctly by the clean model and enter the primary
-  test.
+- Items: 290 prompts. 69 of them are answered correctly by the clean model; 66 enter the primary
+  test once three probe-swap prompts that repeat a multihop bank fact are counted once.
 - Cost: no API calls. The ablation took about 7 minutes on an 8 GB laptop GPU (2026-10-16) and
   the swap about 18 minutes (2026-10-17).
 
@@ -52,7 +52,9 @@ Setup:
     " W", "W" in that order. Items with no such form are skipped.
   - The logit-lens direction is unit(g ⊙ W_U[t]), with g the gain of the model's final RMSNorm.
 - **Where.**
-  - Layers: blocks 9–19 of 24, the paper's L38–83 band rescaled.
+  - Layers: blocks 9–19 of 24, L38–83 rescaled. The paper indexes layers 0–100 by depth; its
+    workspace band is ~L38–~L92 and its swaps use that full band. L38–83 is the range one of its
+    figure captions averages over (Fig. 45), so this band stops short of the paper's.
   - Positions: every prompt position except 0. The tokenizer adds no BOS, and position 0 acts as
     an attention sink. Positions from the answer onwards are never edited.
 - **The ablation.** At each band layer and position, h ← h − (h·u)u. The signed coefficient
@@ -222,7 +224,7 @@ tokens, the excess is −2.14 [−2.87, −1.29] (n=8). Elsewhere it is −2.05 
   and set h_patched = h + V(σ(c) − c), where σ swaps the two entries of c (optionally scaled by a
   factor α). The component of h orthogonal to span{v_s, v_t} is unchanged."
 - Most experiments clamp the swap. The coordinates are pinned to the clean pass's swapped values
-  "at every band layer at the specified positions" (jacobian-lens README).
+  "at every band layer at the specified positions" (jacobian-lens `data/experiments/README.md`).
 - Success means the counterfactual answer becomes top-1.
 
 **What this run does: J++'s implementation, ported.**
@@ -387,7 +389,8 @@ The full grid (scales 0.5–4 for every control, top-5 and word rank) is in `sum
   (steering, ablation, the same-category control and the lens comparison).
 - Code and prompts: https://github.com/anthropics/jacobian-lens (Apache-2.0), including
   `data/experiments/probe-swap.json` at commit `581d398`.
-- J++ Lens (Ayonrinde and Lindsey): https://github.com/safety-research/jpp_lens (Apache-2.0) and
+- J++ Lens (Ayonrinde and Lindsey, *J++ Lens: Jacobian Filtering Enables More Faithful Workspace
+  Lenses*, LessWrong, 2026): https://github.com/safety-research/jpp_lens (Apache-2.0) and
   https://www.lesswrong.com/posts/nc9dHfcB22JdMzGbr.
   - The swap's `Clamp`, swapped targets, near-parallel guard and null nouns are ported from it at
     commit `93f02cd` (see NOTICE.md).
